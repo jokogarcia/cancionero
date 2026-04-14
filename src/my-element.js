@@ -1,6 +1,5 @@
 import { LitElement, css, html } from 'lit'
-import { getSongById } from './services/songs.js'
-import './components/song-renderer.js'
+import './components/home-page.js'
 import './components/song-page.js'
 
 /**
@@ -17,7 +16,6 @@ export class MyElement extends LitElement {
   constructor() {
     super()
     this._path = window.location.pathname;
-    this.song = getSongById('1');
   }
 
   connectedCallback() {
@@ -44,9 +42,7 @@ export class MyElement extends LitElement {
     if (route.route === 'song') {
       return html`<song-page songId=${route.id}></song-page>`;
     }
-    return html`
-      <song-renderer .content=${this.song}></song-renderer>
-    `;
+    return html`<home-page></home-page>`;
   }
 
   _onClick() {
