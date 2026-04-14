@@ -1,6 +1,7 @@
 import { LitElement, css, html } from 'lit'
 import './components/home-page.js'
 import './components/song-page.js'
+import './components/add-song-page.js'
 
 /**
  * An example element.
@@ -34,6 +35,9 @@ export class MyElement extends LitElement {
     if (songMatch) {
       return { route: 'song', id: songMatch[1] };
     }
+    if (this._path === '/add-song') {
+      return { route: 'add-song' };
+    }
     return { route: 'home' };
   }
 
@@ -41,6 +45,9 @@ export class MyElement extends LitElement {
     const route = this._getRoute();
     if (route.route === 'song') {
       return html`<song-page songId=${route.id}></song-page>`;
+    }
+    if (route.route === 'add-song') {
+      return html`<add-song-page></add-song-page>`;
     }
     return html`<home-page></home-page>`;
   }
