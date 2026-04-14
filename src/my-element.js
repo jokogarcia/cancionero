@@ -45,10 +45,6 @@ export class MyElement extends LitElement {
     return html`<home-page></home-page>`;
   }
 
-  _onClick() {
-    this.count++
-  }
-
   static get styles() {
     return css`
       :host {
