@@ -1,8 +1,9 @@
 /** @typedef {import('../services/songs.js').Song} Song */
 
 import { LitElement, html, css } from 'lit';
-import { findSong, getSongById } from '../services/songs.js';
+import { findSong } from '../services/songs.js';
 import { getFavorites, isFavorite, addFavorite, removeFavorite } from '../services/favorites.js';
+import { subscribeToAuth, signOutUser } from '../services/auth.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -13,12 +14,41 @@ export class HomePage extends LitElement {
     static properties = {
         _query: { type: String, state: true },
         _favorites: { type: Array, state: true },
+        _allSongs: { type: Array, state: true },
+        _loading: { type: Boolean, state: true },
+        _currentUser: { type: Object, state: true },
     };
 
     constructor() {
         super();
         this._query = '';
         this._favorites = getFavorites();
+        this._allSongs = [];
+        this._loading = true;
+        this._currentUser = null;
+        this._unsubAuth = null;
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this._unsubAuth = subscribeToAuth(user => {
+            this._currentUser = user;
+        });
+        this._loadSongs();
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this._unsubAuth) this._unsubAuth();
+    }
+
+    async _loadSongs() {
+        this._loading = true;
+        try {
+            this._allSongs = await findSong('', '', '', '', true);
+        } finally {
+            this._loading = false;
+        }
     }
 
     _onSearch(e) {
@@ -35,13 +65,20 @@ export class HomePage extends LitElement {
         this._favorites = getFavorites();
     }
 
-    _getSongList() {
+    async _signOut() {
+        await signOutUser();
+    }
+
+    _getFilteredSongs() {
         const q = this._query.trim();
-        if (!q) {
-            // return all songs — use findSong with wildcard-like approach via empty andOr
-            return findSong('', '', '', '', true);
-        }
-        return findSong(q, q, q, q, false);
+        if (!q) return this._allSongs;
+        const lower = q.toLowerCase();
+        return this._allSongs.filter(song =>
+            song.title?.toLowerCase().includes(lower) ||
+            song.artist?.toLowerCase().includes(lower) ||
+            song.author?.toLowerCase().includes(lower) ||
+            song.content?.toLowerCase().includes(lower)
+        );
     }
 
     _renderSongItem(song) {
@@ -63,10 +100,20 @@ export class HomePage extends LitElement {
     }
 
     render() {
-        const allResults = this._getSongList();
-        const favSongs = this._favorites.map(id => getSongById(id)).filter(Boolean);
-        const nonFavResults = allResults.filter(s => !this._favorites.includes(s.id));
-        const showFavorites = favSongs.length > 0 && !this._query.trim();
+        const filteredSongs = this._getFilteredSongs();
+        const isSearching = this._query.trim().length > 0;
+        const favSongs = this._favorites
+            .map(id => this._allSongs.find(s => s.id === id))
+            .filter(Boolean);
+        const mySongs = this._currentUser
+            ? this._allSongs.filter(s => s.uploaderId === this._currentUser.uid)
+            : [];
+        const showFavorites = favSongs.length > 0 && !isSearching;
+        const showMySongs = mySongs.length > 0 && !isSearching;
+        const nonSpecialResults = filteredSongs.filter(s =>
+            !this._favorites.includes(s.id) &&
+            !(showMySongs && s.uploaderId === this._currentUser?.uid)
+        );
 
         return html`
             <header>
@@ -80,27 +127,53 @@ export class HomePage extends LitElement {
                         aria-label="Search songs"
                     />
                 </div>
-                <button class="add-btn" @click=${() => navigate('/add-song')} aria-label="Add a song">+ Add Song</button>
+                <div class="header-actions">
+                    ${this._currentUser ? html`
+                        <button class="add-btn" @click=${() => navigate('/add-song')} aria-label="Add a song">+ Add Song</button>
+                        <button class="sign-out-btn" @click=${this._signOut} title="Sign out">
+                            ${this._currentUser.photoURL
+                                ? html`<img class="avatar" src=${this._currentUser.photoURL} alt=${this._currentUser.displayName || 'User'} />`
+                                : html`<span class="avatar-placeholder">${(this._currentUser.displayName || this._currentUser.email || '?')[0].toUpperCase()}</span>`
+                            }
+                        </button>
+                    ` : html`
+                        <button class="login-btn" @click=${() => navigate('/login')} aria-label="Sign in">Sign in</button>
+                    `}
+                </div>
             </header>
 
             <main>
-                ${showFavorites ? html`
-                    <section>
-                        <h2>⭐ Favorites</h2>
-                        <ul class="song-list">
-                            ${favSongs.map(s => this._renderSongItem(s))}
-                        </ul>
-                    </section>
-                ` : ''}
+                ${this._loading ? html`<p class="loading">Loading songs…</p>` : html`
+                    ${showMySongs ? html`
+                        <section>
+                            <h2>🎸 My Songs</h2>
+                            <ul class="song-list">
+                                ${mySongs.map(s => this._renderSongItem(s))}
+                            </ul>
+                        </section>
+                    ` : ''}
 
-                <section>
-                    <h2>${this._query.trim() ? `Results for "${this._query.trim()}"` : (showFavorites ? 'All Songs' : 'Songs')}</h2>
-                    ${allResults.length === 0 ? html`<p class="empty">No songs found.</p>` : html`
-                        <ul class="song-list">
-                            ${(showFavorites ? nonFavResults : allResults).map(s => this._renderSongItem(s))}
-                        </ul>
-                    `}
-                </section>
+                    ${showFavorites ? html`
+                        <section>
+                            <h2>⭐ Favorites</h2>
+                            <ul class="song-list">
+                                ${favSongs.map(s => this._renderSongItem(s))}
+                            </ul>
+                        </section>
+                    ` : ''}
+
+                    <section>
+                        <h2>${isSearching
+                            ? `Results for "${this._query.trim()}"`
+                            : (showFavorites || showMySongs ? 'All Songs' : 'Songs')
+                        }</h2>
+                        ${filteredSongs.length === 0 ? html`<p class="empty">No songs found.</p>` : html`
+                            <ul class="song-list">
+                                ${(isSearching ? filteredSongs : nonSpecialResults).map(s => this._renderSongItem(s))}
+                            </ul>
+                        `}
+                    </section>
+                `}
             </main>
         `;
     }
@@ -244,6 +317,19 @@ export class HomePage extends LitElement {
             margin: 8px 0 0;
         }
 
+        .loading {
+            color: var(--text, #6b6375);
+            font-size: 0.95rem;
+            text-align: center;
+            padding: 32px 0;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .add-btn {
             background: var(--accent, #aa3bff);
             color: #fff;
@@ -260,6 +346,59 @@ export class HomePage extends LitElement {
 
         .add-btn:hover {
             opacity: 0.88;
+        }
+
+        .login-btn {
+            background: none;
+            color: var(--accent, #aa3bff);
+            border: 1px solid var(--accent, #aa3bff);
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+
+        .login-btn:hover {
+            background: var(--accent-bg, rgba(170, 59, 255, 0.08));
+        }
+
+        .sign-out-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            border-radius: 50%;
+            overflow: hidden;
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: block;
+        }
+
+        .avatar-placeholder {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent, #aa3bff);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* Tablet and up */

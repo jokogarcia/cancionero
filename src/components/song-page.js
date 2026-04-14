@@ -13,17 +13,38 @@ function navigate(path) {
 export class SongPage extends LitElement {
     static properties = {
         songId: { type: String },
+        _song: { type: Object, state: true },
+        _loading: { type: Boolean, state: true },
         _favorite: { type: Boolean, state: true },
     };
 
+    constructor() {
+        super();
+        this._song = null;
+        this._loading = true;
+        this._favorite = false;
+    }
+
     connectedCallback() {
         super.connectedCallback();
-        this._favorite = isFavorite(this.songId);
+        this._loadSong();
     }
 
     updated(changedProps) {
         if (changedProps.has('songId')) {
+            this._loadSong();
+        }
+    }
+
+    async _loadSong() {
+        this._loading = true;
+        this._song = null;
+        try {
+            const song = await getSongById(this.songId);
+            this._song = song;
             this._favorite = isFavorite(this.songId);
+        } finally {
+            this._loading = false;
         }
     }
 
@@ -37,8 +58,15 @@ export class SongPage extends LitElement {
     }
 
     render() {
-        const song = getSongById(this.songId);
-        if (!song) {
+        if (this._loading) {
+            return html`
+                <div class="toolbar">
+                    <button class="back-btn" @click=${() => navigate('/')}>← Back</button>
+                </div>
+                <p class="loading">Loading…</p>
+            `;
+        }
+        if (!this._song) {
             return html`
                 <div class="toolbar">
                     <button class="back-btn" @click=${() => navigate('/')}>← Back</button>
@@ -53,7 +81,7 @@ export class SongPage extends LitElement {
                     ${this._favorite ? '★ Remove from favorites' : '☆ Add to favorites'}
                 </button>
             </div>
-            <song-renderer .content=${song}></song-renderer>
+            <song-renderer .content=${this._song}></song-renderer>
         `;
     }
 
@@ -106,7 +134,8 @@ export class SongPage extends LitElement {
             border-color: var(--accent-border, rgba(170, 59, 255, 0.5));
         }
 
-        .not-found {
+        .not-found,
+        .loading {
             padding: 24px;
             color: var(--text, #6b6375);
         }
@@ -114,4 +143,3 @@ export class SongPage extends LitElement {
 }
 
 customElements.define('song-page', SongPage);
-
