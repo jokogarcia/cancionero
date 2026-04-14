@@ -80,6 +80,7 @@ export class HomePage extends LitElement {
                         aria-label="Search songs"
                     />
                 </div>
+                <button class="add-btn" @click=${() => navigate('/add-song')} aria-label="Add a song">+ Add Song</button>
             </header>
 
             <main>
@@ -241,6 +242,24 @@ export class HomePage extends LitElement {
             color: var(--text, #6b6375);
             font-size: 0.95rem;
             margin: 8px 0 0;
+        }
+
+        .add-btn {
+            background: var(--accent, #aa3bff);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: opacity 0.15s;
+        }
+
+        .add-btn:hover {
+            opacity: 0.88;
         }
 
         /* Tablet and up */
