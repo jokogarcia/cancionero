@@ -30,7 +30,7 @@ export class AddSongPage extends LitElement {
             title: form.title.value,
             author: form.author.value,
             artist: form.artist.value,
-            year: form.year.value ? Number(form.year.value) : '',
+            year: form.year.value ? Number(form.year.value) : undefined,
             album: form.album.value,
             key: form.key.value,
             content: form.content.value,
