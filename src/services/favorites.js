@@ -1,14 +1,23 @@
-/**
- * @type {string[]}
- */
-let favorites = [];
+const FAVORITES_KEY = 'cancionero_favorites';
+
+function loadFavorites() {
+    try {
+        return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+    } catch {
+        return [];
+    }
+}
+
+function saveFavorites(list) {
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(list));
+}
 
 /**
  * Get all favorite song IDs.
  * @returns {string[]}
  */
 export function getFavorites() {
-    return [...favorites];
+    return loadFavorites();
 }
 
 /**
@@ -17,7 +26,7 @@ export function getFavorites() {
  * @returns {boolean}
  */
 export function isFavorite(songId) {
-    return favorites.includes(songId);
+    return loadFavorites().includes(songId);
 }
 
 /**
@@ -25,8 +34,10 @@ export function isFavorite(songId) {
  * @param {string} songId
  */
 export function addFavorite(songId) {
-    if (!favorites.includes(songId)) {
-        favorites.push(songId);
+    const list = loadFavorites();
+    if (!list.includes(songId)) {
+        list.push(songId);
+        saveFavorites(list);
     }
 }
 
@@ -35,5 +46,5 @@ export function addFavorite(songId) {
  * @param {string} songId
  */
 export function removeFavorite(songId) {
-    favorites = favorites.filter(id => id !== songId);
+    saveFavorites(loadFavorites().filter(id => id !== songId));
 }

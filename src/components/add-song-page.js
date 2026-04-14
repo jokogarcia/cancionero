@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { insertSong } from '../services/songs.js';
+import { getCurrentUser, subscribeToAuth } from '../services/auth.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -9,11 +10,31 @@ function navigate(path) {
 export class AddSongPage extends LitElement {
     static properties = {
         _errors: { type: Object, state: true },
+        _saving: { type: Boolean, state: true },
+        _currentUser: { type: Object, state: true },
     };
 
     constructor() {
         super();
         this._errors = {};
+        this._saving = false;
+        this._currentUser = getCurrentUser();
+        this._unsubAuth = null;
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this._unsubAuth = subscribeToAuth(user => {
+            this._currentUser = user;
+            if (!user) {
+                navigate('/login');
+            }
+        });
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this._unsubAuth) this._unsubAuth();
     }
 
     _validate(data) {
@@ -23,8 +44,12 @@ export class AddSongPage extends LitElement {
         return errors;
     }
 
-    _onSubmit(e) {
+    async _onSubmit(e) {
         e.preventDefault();
+        if (!this._currentUser) {
+            navigate('/login');
+            return;
+        }
         const form = e.target;
         const data = {
             title: form.title.value,
@@ -34,6 +59,7 @@ export class AddSongPage extends LitElement {
             album: form.album.value,
             key: form.key.value,
             content: form.content.value,
+            uploaderId: this._currentUser.uid,
         };
 
         const errors = this._validate(data);
@@ -43,8 +69,15 @@ export class AddSongPage extends LitElement {
         }
 
         this._errors = {};
-        const newSong = insertSong(data);
-        navigate(`/song/${newSong.id}`);
+        this._saving = true;
+        try {
+            const newSong = await insertSong(data);
+            navigate(`/song/${newSong.id}`);
+        } catch (err) {
+            this._errors = { _general: 'Failed to save song. Please try again.' };
+        } finally {
+            this._saving = false;
+        }
     }
 
     render() {
@@ -54,6 +87,7 @@ export class AddSongPage extends LitElement {
             </div>
             <main>
                 <h1>Add a Song</h1>
+                ${this._errors._general ? html`<p class="error-banner">${this._errors._general}</p>` : ''}
                 <form @submit=${this._onSubmit} novalidate>
                     <div class="field ${this._errors.title ? 'has-error' : ''}">
                         <label for="title">Title <span class="required" aria-hidden="true">*</span></label>
@@ -93,7 +127,9 @@ export class AddSongPage extends LitElement {
                     </div>
 
                     <div class="actions">
-                        <button type="submit" class="submit-btn">Save Song</button>
+                        <button type="submit" class="submit-btn" ?disabled=${this._saving}>
+                            ${this._saving ? 'Saving…' : 'Save Song'}
+                        </button>
                     </div>
                 </form>
             </main>
@@ -199,6 +235,16 @@ export class AddSongPage extends LitElement {
             color: #e53e3e;
         }
 
+        .error-banner {
+            background: #fff5f5;
+            color: #e53e3e;
+            border: 1px solid #fed7d7;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            margin: 0 0 16px;
+        }
+
         .actions {
             display: flex;
             justify-content: flex-end;
@@ -217,8 +263,13 @@ export class AddSongPage extends LitElement {
             transition: opacity 0.15s;
         }
 
-        .submit-btn:hover {
+        .submit-btn:hover:not(:disabled) {
             opacity: 0.88;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         @media (min-width: 600px) {
