@@ -83,5 +83,55 @@ const db = [
         year: 1970,
         author: 'Paul McCartney',
         content: "[C]When I find myself in times of [G]trouble\nM[D]other Mary comes to [A]me\n[C]Speaking words of wisdom, [G]let it be"
+    },
+    {
+        id: '2',
+        title: 'Knockin\' on Heaven\'s Door',
+        artist: 'Bob Dylan',
+        key: 'G',
+        album: 'Pat Garrett & Billy the Kid',
+        year: 1973,
+        author: 'Bob Dylan',
+        content: "[G]Mama, take this [D]badge off of [Am]me\n[G]I can't use it [D]anymore\n[G]It's gettin' [D]dark, too dark to [Am]see\n[G]I feel I'm [D]knockin' on heaven's [G]door"
+    },
+    {
+        id: '3',
+        title: 'Wonderwall',
+        artist: 'Oasis',
+        key: 'Em',
+        album: '(What\'s the Story) Morning Glory?',
+        year: 1995,
+        author: 'Noel Gallagher',
+        content: "[Em7]Today is gonna be the day that they're gonna [G]throw it back to [Dsus4]you\n[Em7]By now you should've somehow realized [G]what you gotta [Dsus4]do\n[Em7]I don't believe that [G]anybody [Dsus4]feels the way I [A7sus4]do about you [Em7]now"
+    },
+    {
+        id: '4',
+        title: 'Hotel California',
+        artist: 'Eagles',
+        key: 'Bm',
+        album: 'Hotel California',
+        year: 1977,
+        author: 'Don Felder, Don Henley, Glenn Frey',
+        content: "[Bm]On a dark desert [F#]highway, [A]cool wind in my [E]hair\n[G]Warm smell of [D]colitas rising [Em]up through the [F#]air\n[Bm]Up ahead in the [F#]distance, I [A]saw a shimmering [E]light"
+    },
+    {
+        id: '5',
+        title: 'Wish You Were Here',
+        artist: 'Pink Floyd',
+        key: 'G',
+        album: 'Wish You Were Here',
+        year: 1975,
+        author: 'Roger Waters, David Gilmour',
+        content: "[G]So, so you think you can [C]tell\n[Am]Heaven from Hell, [G]blue skies from pain\n[C]Can you tell a green field from a [Am]cold steel rail?\n[G]A smile from a veil?"
+    },
+    {
+        id: '6',
+        title: 'Stand By Me',
+        artist: 'Ben E. King',
+        key: 'A',
+        album: 'Don\'t Play That Song!',
+        year: 1961,
+        author: 'Ben E. King, Jerry Leiber, Mike Stoller',
+        content: "[A]When the night has come\nAnd the [F#m]land is dark\nAnd the [D]moon is the only [E]light we'll see\n[A]No I won't be afraid\nNo I [F#m]won't be afraid\nJust as [D]long as you stand, [E]stand by [A]me"
     }
 ];

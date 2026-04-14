@@ -1,9 +1,6 @@
 import { LitElement, css, html } from 'lit'
-import litLogo from './assets/lit.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import { getSongById } from './services/songs.js'
-import './components/song-renderer.js'
+import './components/home-page.js'
+import './components/song-page.js'
 
 /**
  * An example element.
@@ -12,30 +9,40 @@ import './components/song-renderer.js'
  * @csspart button - The button
  */
 export class MyElement extends LitElement {
-  static get properties() {
-    return {
-      /**
-       * The number of times the button has been clicked.
-       */
-      count: { type: Number },
-    }
+  static properties = {
+    _path: { type: String, state: true },
   }
 
   constructor() {
     super()
-    this.count = 0
-    this.song = getSongById('1');
-    
+    this._path = window.location.pathname;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._onPopState = () => { this._path = window.location.pathname; };
+    window.addEventListener('popstate', this._onPopState);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('popstate', this._onPopState);
+  }
+
+  _getRoute() {
+    const songMatch = this._path.match(/^\/song\/(.+)$/);
+    if (songMatch) {
+      return { route: 'song', id: songMatch[1] };
+    }
+    return { route: 'home' };
   }
 
   render() {
-    return html`
-      <song-renderer .content=${this.song}></song-renderer>
-    `
-  }
-
-  _onClick() {
-    this.count++
+    const route = this._getRoute();
+    if (route.route === 'song') {
+      return html`<song-page songId=${route.id}></song-page>`;
+    }
+    return html`<home-page></home-page>`;
   }
 
   static get styles() {
