@@ -36,6 +36,13 @@ export class SongRenderer extends LitElement {
 
       let i = end;
       while (i < line.length && /\s/.test(line[i])) i++;
+      const nextTokenIsChord = i < line.length && /^\[[^\]]+\]/.test(line.slice(i));
+
+      if (nextTokenIsChord) {
+        parts.push(html`<span class="chord" data-text=${chord}> </span>`);
+        cursor = end;
+        continue;
+      }
 
       if (i < line.length) {
         if (i > end) parts.push(line.slice(end, i));
