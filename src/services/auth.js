@@ -4,10 +4,12 @@ import { app } from '../firebase.js';
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
+let _initialized = false;
 let _currentUser = null;
 const _listeners = new Set();
 
 onAuthStateChanged(auth, (user) => {
+    _initialized = true;
     _currentUser = user;
     _listeners.forEach(fn => fn(user));
 });
@@ -27,7 +29,11 @@ export function getCurrentUser() {
  */
 export function subscribeToAuth(callback) {
     _listeners.add(callback);
-    callback(_currentUser);
+    // Only call immediately if Firebase Auth has already resolved the initial state.
+    // Otherwise the callback is called when onAuthStateChanged fires.
+    if (_initialized) {
+        callback(_currentUser);
+    }
     return () => _listeners.delete(callback);
 }
 

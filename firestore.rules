@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /songs/{songId} {
+      allow read: if true;
+
+      allow create: if request.auth != null
+        && request.resource.data.uploaderId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.content is string
+        && request.resource.data.content.size() > 0;
+
+      allow update, delete: if request.auth != null
+        && resource.data.uploaderId == request.auth.uid;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
