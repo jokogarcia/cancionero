@@ -12,7 +12,6 @@ service cloud.firestore {
         && request.resource.data.content is string
         && request.resource.data.content.size() > 0
         && request.resource.data.version is int
-        && request.resource.data.version == 1
         && request.resource.data.createdAt is timestamp
         && request.resource.data.createdAt == request.time
         && request.resource.data.modifiedAt is timestamp
