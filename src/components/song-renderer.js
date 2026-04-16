@@ -2,8 +2,6 @@
 
 import { LitElement, html, css } from 'lit';
 
-const ADJACENT_CHORD_PATTERN = /^\[[^\]]+\]/;
-
 export class SongRenderer extends LitElement {
     
   static properties = {
@@ -38,7 +36,10 @@ export class SongRenderer extends LitElement {
 
       let i = end;
       while (i < line.length && /\s/.test(line[i])) i++;
-      const nextIsChord = i < line.length && ADJACENT_CHORD_PATTERN.test(line.slice(i));
+      const nextIsChord =
+        i < line.length &&
+        line[i] === '[' &&
+        line.indexOf(']', i + 1) > i + 1;
 
       if (nextIsChord) {
         parts.push(html`<span class="chord" data-text=${chord}> </span>`);
