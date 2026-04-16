@@ -8,13 +8,18 @@ SONG FORMAT in Firestore:
   "year": 2024,
   "author": "Author Name",
   "uploaderId": "uid-of-uploader",
+  "version": 1,
+  "createdAt": "<Firestore timestamp>",
+  "modifiedAt": "<Firestore timestamp>",
+  "isPublic": false,
+  "isHiddenDMCA": false,
   "content":"Plain text with chords in square brackets inline with the lyrics, e.g.:
 [C]This is the [G]first line of the song
 [D]And this is the [A]second line"
 }
   
 */
-import { getFirestore, collection, getDocs, doc, getDoc, addDoc, query, where } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, getDoc, addDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { app } from '../firebase.js';
 
 const db = getFirestore(app);
@@ -30,6 +35,11 @@ const songsCol = collection(db, 'songs');
  * @property {number} year
  * @property {string} author
  * @property {string} uploaderId
+ * @property {number} version
+ * @property {import('firebase/firestore').Timestamp} createdAt
+ * @property {import('firebase/firestore').Timestamp} modifiedAt
+ * @property {boolean} isPublic
+ * @property {boolean} isHiddenDMCA
  * @property {string} content
  */
 
@@ -81,8 +91,16 @@ export async function getSongById(id) {
  * @return {Promise<Song>} The created song including its generated id.
  */
 export async function insertSong(song) {
-    const docRef = await addDoc(songsCol, song);
-    return { id: docRef.id, ...song };
+    const songWithDefaults = {
+        ...song,
+        version: 1,
+        createdAt: serverTimestamp(),
+        modifiedAt: serverTimestamp(),
+        isPublic: false,
+        isHiddenDMCA: false,
+    };
+    const docRef = await addDoc(songsCol, songWithDefaults);
+    return { id: docRef.id, ...songWithDefaults };
 }
 
 /**

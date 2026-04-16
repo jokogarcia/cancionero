@@ -10,9 +10,23 @@ service cloud.firestore {
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0
         && request.resource.data.content is string
-        && request.resource.data.content.size() > 0;
+        && request.resource.data.content.size() > 0
+        && request.resource.data.version is int
+        && request.resource.data.version == 1
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.modifiedAt is timestamp
+        && request.resource.data.modifiedAt == request.time
+        && request.resource.data.isPublic is bool
+        && request.resource.data.isPublic == false
+        && request.resource.data.isHiddenDMCA is bool
+        && request.resource.data.isHiddenDMCA == false;
 
-      allow update, delete: if request.auth != null
+      allow update: if request.auth != null
+        && resource.data.uploaderId == request.auth.uid
+        && request.resource.data.isHiddenDMCA == resource.data.isHiddenDMCA;
+
+      allow delete: if request.auth != null
         && resource.data.uploaderId == request.auth.uid;
     }
 
