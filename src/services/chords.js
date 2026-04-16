@@ -28,6 +28,13 @@ export function insertChordShape(chordShape){
     db.push(newChordShape);
     return newChordShape;
 }
+export function getAllChordNames(){
+    const names = new Set();
+    db.forEach(chord => names.add(chord.name));
+    return Array.from(names);
+}
+
+
 
 
 const db =[
