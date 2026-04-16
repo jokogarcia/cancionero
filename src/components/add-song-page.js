@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { insertSong } from '../services/songs.js';
-import { getCurrentUser, subscribeToAuth } from '../services/auth.js';
+import { subscribeToAuth } from '../services/auth.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -12,13 +12,15 @@ export class AddSongPage extends LitElement {
         _errors: { type: Object, state: true },
         _saving: { type: Boolean, state: true },
         _currentUser: { type: Object, state: true },
+        _authInitialized: { type: Boolean, state: true },
     };
 
     constructor() {
         super();
         this._errors = {};
         this._saving = false;
-        this._currentUser = getCurrentUser();
+        this._currentUser = null;
+        this._authInitialized = false;
         this._unsubAuth = null;
     }
 
@@ -26,6 +28,7 @@ export class AddSongPage extends LitElement {
         super.connectedCallback();
         this._unsubAuth = subscribeToAuth(user => {
             this._currentUser = user;
+            this._authInitialized = true;
             if (!user) {
                 navigate('/login');
             }
@@ -81,6 +84,9 @@ export class AddSongPage extends LitElement {
     }
 
     render() {
+        if (!this._authInitialized) {
+            return html`<p class="loading">Loading…</p>`;
+        }
         return html`
             <div class="toolbar">
                 <button class="back-btn" @click=${() => navigate('/')}>← Back</button>
