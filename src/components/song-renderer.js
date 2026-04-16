@@ -92,20 +92,22 @@ export class SongRenderer extends LitElement {
       display: block;
     }
  p {
-  position: relative;
   font-size: 1.2em;
 }
 
-span {
-  position: relative;
+span.chord {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  vertical-align: text-bottom;
 }
 
-span::before {
-  position: absolute;
-  top: -1em;
+span.chord::before {
   color: red;
   font-size: 0.8em;
   content: attr(data-text);
+  white-space: nowrap;
+  line-height: 1.5;
 }`;
 }
 
