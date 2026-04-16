@@ -18,6 +18,7 @@ export class SongRenderer extends LitElement {
   static processSongLine(line){
     const parts = [];
     let cursor = 0;
+    const adjacentChordPattern = /^\[[^\]]+\]/;
 
     while (cursor < line.length) {
       const next = line.slice(cursor).match(/\[([^\]]+)\]/);
@@ -36,7 +37,7 @@ export class SongRenderer extends LitElement {
 
       let i = end;
       while (i < line.length && /\s/.test(line[i])) i++;
-      const nextIsChord = i < line.length && /^\[[^\]]+\]/.test(line.slice(i));
+      const nextIsChord = i < line.length && adjacentChordPattern.test(line.slice(i));
 
       if (nextIsChord) {
         parts.push(html`<span class="chord" data-text=${chord}> </span>`);
