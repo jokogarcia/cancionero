@@ -96,7 +96,7 @@ export async function insertSong(song) {
         version: 1,
         createdAt: serverTimestamp(),
         modifiedAt: serverTimestamp(),
-        isPublic: false,
+        isPublic: song.isPublic === true,
         isHiddenDMCA: false,
     };
     const docRef = await addDoc(songsCol, songWithDefaults);
