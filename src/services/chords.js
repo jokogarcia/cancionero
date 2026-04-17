@@ -187,8 +187,6 @@ async function waitForServiceWorkerSyncIfRunning(){
 async function loadChords(){
     if(allChords) return allChords;
 
-    console.log('Loading chords...');
-
     await waitForServiceWorkerSyncIfRunning();
 
     try {
