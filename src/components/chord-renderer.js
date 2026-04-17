@@ -20,8 +20,10 @@ export function RenderShape(chordShape) {
     const frets = chordShape.frets;
     const bars = chordShape.bars || [];
     const upperFret = Math.max(...frets);
-    const lowerFret = Math.min(...frets.filter(f => f > 0));
-    const fretOffset = upperFret > 4 ? lowerFret : 0;
+    const frettedNotes = frets.filter(f => f > 0);
+    const hasFrettedNotes = frettedNotes.length > 0;
+    const lowerFret = hasFrettedNotes ? Math.min(...frettedNotes) : 1;
+    const fretOffset = hasFrettedNotes && upperFret > 4 ? lowerFret : 0;
    
    
     const svgContent=svg`<svg width="200" height="100" 
