@@ -66,6 +66,9 @@ export function RenderShape(chordShape) {
    <line x1="-2.5" y1="-2.5" x2="2.55" y2="2.5" class="muteline" />
    <line x1="-2.5" y1="2.5" x2="2.5" y2="-2.5" class="muteline" />
   </symbol>
+  <symbol id="icon-open" viewBox="-2.5 -2.5 5 5" width="5" height="5" transform="translate(0,-2.5)" >
+    <circle cx="0" cy="0" r="2" fill="none" stroke="var(--chord-fg)" stroke-width="0.5"/>
+  </symbol>
   ${[5,4,3,2,1,0]
     .map((i,n) => svg`
       <text x="${xoffset-10}" y = "${yoffset+stringSpacing*(i)}" transform="rotate(270,${xoffset-10},${yoffset+stringSpacing*i})">${n+1}</text>
@@ -82,7 +85,7 @@ export function RenderShape(chordShape) {
     if(fret === -1) {
       return svg`<use href="#icon-mute" x="${xoffset-5}" y="${yoffset+stringSpacing*index}" />`;
     } else if(fret === 0) {
-      return svg``;
+      return svg`<use href="#icon-open" x="${xoffset-5}" y="${yoffset+stringSpacing*index}" />`;
     } else {
       return svg`<circle class="finger" cx="${fretToX(fret, fretOffset)}" cy="${yoffset+stringSpacing*index}" r="3" id="finger-string-${index+1}" />`;
     }
