@@ -5,13 +5,17 @@ import { svg } from 'lit';
 
 /**
  * Returns SVG representation of the chord shape for rendering on the frontend.
- * @param {Frets} frets 
+ * @param {ChordShape} chordShape
  * @returns {string} SVG string
  */
-export function RenderShape(frets){
-    console.log(frets);
-    const lowerFret = Math.min(...frets.filter(f => f >= 0));
+export function RenderShape(chordShape) {
+    const frets = chordShape.frets;
+    const bars = chordShape.bars || [];
+    let lowerFret = Math.min(...frets.filter(f => f >= 0));
     const upperFret = Math.max(...frets);
+    if(upperFret - lowerFret < 5) {
+        lowerFret = 0;
+    }
     const fretCount = upperFret - lowerFret + 1;
     if(fretCount > 5) {
         throw new Error("Chord shape is too wide to render.");
@@ -20,56 +24,76 @@ export function RenderShape(frets){
     const yoffset = 10;
     const fretSpacing = 30;
     const stringSpacing = 10;
-    const svgContent=svg`<svg width="110" height="65" 
-      viewBox="0 0 110 65" xmlns="http://www.w3.org/2000/svg">
+    const svgContent=svg`<svg width="200" height="100" 
+      viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
   <style>
-     .string {
-      stroke:gray;
-     }
-     .fret {
-      stroke:black;
-     }
-     line {
-        stroke-width:0.7;
-        stroke:black;
+    svg {
+      --chord-fg: black;
+    }
+    @media (prefers-color-scheme: dark) {
+      svg {
+        --chord-fg: white;
       }
-    .muteline{
-       stroke-width:0.3;
-       stroke:gray;
     }
-    text{
-       font: 6px sans-serif;
+    .string {
+      stroke: gray;
     }
-    
+    .fret {
+      stroke: var(--chord-fg);
+      
+    }
+    line {
+      stroke-width: 0.7;
+      stroke: var(--chord-fg);
+    }
+    .finger {
+      fill: var(--chord-fg);
+    }
+    .muteline {
+      stroke-width: 0.3;
+      stroke: gray;
+    }
+    text {
+      font: 6px sans-serif;
+      fill: var(--chord-fg);
+    }
+    .bar {
+      stroke-width: 5;
+      stroke: var(--chord-fg);
+    }
   </style>
  <symbol id="icon-mute" viewBox="-2.5 -2.5 5 5" width="5" height="5" transform="translate(0,-2.5)" >
    <line x1="-2.5" y1="-2.5" x2="2.55" y2="2.5" class="muteline" />
    <line x1="-2.5" y1="2.5" x2="2.5" y2="-2.5" class="muteline" />
   </symbol>
-  <line class="string" x1="${xoffset}" y1="${yoffset+10}" x2="${xoffset+fretSpacing*5}" y2="${yoffset+10}" />
-  <line class="string" x1="${xoffset}" y1="${yoffset+20}" x2="${xoffset+fretSpacing*5}" y2="${yoffset+20}"/>
-  <line class="string" x1="${xoffset}" y1="${yoffset+30}" x2="${xoffset+fretSpacing*5}" y2="${yoffset+30}"/>
-  <line class="string" x1="${xoffset}" y1="${yoffset+40}" x2="${xoffset+fretSpacing*5}" y2="${yoffset+40}"/>
-  <line class="string" x1="${xoffset}" y1="${yoffset+50}" x2="${xoffset+fretSpacing*5}" y2="${yoffset+50}"/>
-  <line class="string" x1="${xoffset}" y1="${yoffset+60}" x2="${xoffset+fretSpacing*5}" y2="${yoffset+60}"/>
+  ${[5,4,3,2,1,0]
+    .map((i,n) => svg`
+      <text x="${xoffset-10}" y = "${yoffset+stringSpacing*(i)}" transform="rotate(270,${xoffset-10},${yoffset+stringSpacing*i})">${n+1}</text>
+      <line class="string" x1="${xoffset}" y1="${yoffset+stringSpacing*i}" x2="${xoffset+fretSpacing*5}" y2="${yoffset+stringSpacing*i}" />
+      `)
+    }
+  ${[0,1,2,3,4,5]
+    .map(i => svg`
+      <line class="fret" x1="${xoffset+fretSpacing*i}" y1="${yoffset}" x2="${xoffset+fretSpacing*i}" y2="${stringSpacing*6}" />
+      `)
+    }
 
-  <line class="fret" x1="${xoffset}" y1="${yoffset}" x2="${xoffset}" y2="${yoffset+stringSpacing*6}"/>
-  <line class="fret" x1="${xoffset+fretSpacing*5}" y1="${yoffset}" x2="${xoffset+fretSpacing*5}" y2="${yoffset+stringSpacing*6}"/>
-  <line class="fret" x1="${xoffset+fretSpacing*2}" y1="${yoffset}" x2="${xoffset+fretSpacing*2}" y2="${yoffset+stringSpacing*6}"/>
-  <line class="fret" x1="${xoffset+fretSpacing*4}" y1="${yoffset}" x2="${xoffset+fretSpacing*4}" y2="${yoffset+stringSpacing*6}"/>
-  
-  <!--Dynamic part -->
   ${frets.map((fret, index) => {
     if(fret === -1) {
-      return svg`<use href="#icon-mute" x="${xoffset}" y="${yoffset+10}" />`;
+      return svg`<use href="#icon-mute" x="${xoffset-5}" y="${yoffset+stringSpacing*index}" />`;
     } else if(fret === lowerFret) {
       return svg``;
     } else {
-      return svg`<circle class="finger" cx="${xoffset+fretSpacing/2+(fret-lowerFret)*fretSpacing}" cy="${yoffset+stringSpacing*index}" r="3" id="finger-string-${index+1}" />`;
+      return svg`<circle class="finger" cx="${xoffset+fretSpacing/2+(fret-lowerFret-1)*fretSpacing}" cy="${yoffset+stringSpacing*index}" r="3" id="finger-string-${index+1}" />`;
     }
   })}
-  
-  <use href="#icon-mute" x="10" y ="10" />
+  ${bars.map(bar => {
+    const y1 = yoffset + stringSpacing * (bar.fromString - 1);
+    const y2 = yoffset + stringSpacing * (bar.toString - 1);
+    const x = xoffset + fretSpacing / 2 + (bar.fret - lowerFret -1) * fretSpacing;
+    return svg`<line class="bar" x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" />`;
+  })}
+
   <text x="15" y="12" transform="rotate(270,15,8)">${lowerFret}</text>
   
 </svg>`;

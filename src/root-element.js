@@ -3,6 +3,7 @@ import './components/home-page.js'
 import './components/song-page.js'
 import './components/add-song-page.js'
 import './components/login-page.js'
+import './components/chord-preview-page.js'
 
 /**
  * An example element.
@@ -10,7 +11,7 @@ import './components/login-page.js'
  * @slot - This element has a slot
  * @csspart button - The button
  */
-export class MyElement extends LitElement {
+export class RootElement extends LitElement {
   static properties = {
     _path: { type: String, state: true },
   }
@@ -42,6 +43,9 @@ export class MyElement extends LitElement {
     if (this._path === '/login') {
       return { route: 'login' };
     }
+    if (this._path === '/chord-preview') {
+      return { route: 'chord-preview' };
+    }
     return { route: 'home' };
   }
 
@@ -55,6 +59,9 @@ export class MyElement extends LitElement {
     }
     if (route.route === 'login') {
       return html`<login-page></login-page>`;
+    }
+    if (route.route === 'chord-preview') {
+      return html`<chord-preview-page></chord-preview-page>`;
     }
     return html`<home-page></home-page>`;
   }
@@ -373,4 +380,4 @@ export class MyElement extends LitElement {
   }
 }
 
-window.customElements.define('my-element', MyElement)
+window.customElements.define('root-element', RootElement)

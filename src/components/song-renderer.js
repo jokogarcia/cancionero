@@ -42,17 +42,26 @@ export class SongRenderer extends LitElement {
   _closeModal() {
     this._modalChord = null;
   }
+  updated(changedProps) {
+    if (changedProps.has('_modalChord')) {
+      const dialog = this.renderRoot.querySelector('dialog');
+      if (this._modalChord && dialog && !dialog.open) {
+        dialog.showModal();
+      } else if (!this._modalChord && dialog && dialog.open) {
+        dialog.close();
+      }
+    }
+  }
   _renderModal() {
-    if (!this._modalChord) return '';
-    const shapes = getChordShapes(this._modalChord);
-    const svgContent = shapes.length > 0 ? RenderShape(shapes[0].frets) : html`<p>No shape found</p>`;
+    const shapes = this._modalChord ? getChordShapes(this._modalChord) : [];
+    const svgContent = shapes.length > 0 ? RenderShape(shapes[0]) : html`<p>No shape found</p>`;
     return html`
-      <div class="modal-backdrop" @click=${this._closeModal}>
+      <dialog @click=${this._closeModal} @close=${this._closeModal}>
         <div class="modal" @click=${e => e.stopPropagation()}>
           <h2>${this._modalChord}</h2>
           ${svgContent}
         </div>
-      </div>
+      </dialog>
     `;
   }
   render() {
@@ -100,17 +109,18 @@ export class SongRenderer extends LitElement {
     text-align: left;
     font-size: x-small;
    }
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
+  dialog {
+    border: none;
+    border-radius: 8px;
+    padding: 0;
+    background: transparent;
+  }
+  dialog::backdrop {
     background: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
   }
   .modal {
     background: white;
+    color: black;
     border-radius: 8px;
     padding: 1.5em 2em;
     display: flex;
@@ -125,6 +135,12 @@ export class SongRenderer extends LitElement {
   .modal button {
     padding: 0.4em 1.2em;
     cursor: pointer;
+  }
+  @media (prefers-color-scheme: dark) {
+    .modal {
+      background: #1e1e1e;
+      color: white;
+    }
   }
 `;
 }
