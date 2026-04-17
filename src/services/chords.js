@@ -16,6 +16,31 @@
  * @property {Bar[]} bars
  */
 
+function getBars(fingering, frets){
+    if(!fingering) return [];
+    fingering = fingering.map(f => parseInt(f,10));
+    const bars = [];
+    // if there are repeated finger numbers it indicates a bar
+    const fingerCounts = {};
+    fingering.forEach((f,i) => {
+        if(f > 0){
+            fingerCounts[f] = fingerCounts[f] || [];
+            fingerCounts[f].push(i);
+        }
+    });
+    for(const finger in fingerCounts){
+        const strings = fingerCounts[finger];
+        if(strings.length > 1){
+            bars.push({
+                fret: frets[strings[0]],
+                fromString: Math.min(...strings) + 1,
+                toString: Math.max(...strings) + 1,
+            });
+        }
+    }
+
+}
+
 /**
  * @param {string} name
  * @returns {ChordShape[]}
@@ -23,14 +48,20 @@
 export async function getChordShapes(name){
     
     const chords = await getAllChords();
-    const positions = chords[name]?.positions || [];
-    return positions.map(pos => ({
-        id: `${name}-${pos.frets.join('')}`,
+    const _chord = chords[name];
+
+    if(!_chord || !_chord[0]) return [];
+    const chord=_chord[0];
+    const positions = chord.positions || [];
+    const frets = positions.map(f => f === 'x' ? -1 : parseInt(f,10));
+    const bars = getBars(chord.fingerings?.[0]?.fingers, frets);
+    return [{
+        id: `${name}-0`,
         name,
-        frets: pos.frets,
-        bars: pos.bars || [],
-    }));
-    return [chords[name]] || [];
+        frets,
+        bars,
+    }];
+   
 }
 let allChords=null;
 async function loadChords(){
@@ -40,7 +71,6 @@ async function loadChords(){
         const response = await fetch('/chords.json');
         const data = await response.json();
         allChords = data;
-        console.log("Chords loaded.",allChords);
         return allChords;
     } catch (error) {
         console.error("Failed to load chords:", error);

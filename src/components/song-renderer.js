@@ -10,8 +10,14 @@ export class SongRenderer extends LitElement {
     content: { type: Object },
     _modalChord: { type: String, state: true },
     _chordsReady: { type: Boolean, state: true },
+    _chordSVGContent: { state: true },
   };
   static allChordNames = null;
+
+  constructor() {
+    super();
+    this._chordSVGContent = html`<p>Loading...</p>`;
+  }
 
   async connectedCallback() {
     super.connectedCallback();
@@ -43,7 +49,14 @@ export class SongRenderer extends LitElement {
   _openChordModal(e) {
     e.preventDefault();
     const chordName = e.target.closest('a.chord-link')?.getAttribute('data-chord');
-    if (chordName) this._modalChord = chordName;
+    if (chordName){
+       this._modalChord = chordName;
+       this._chordSVGContent = html`<p>Loading...</p>`;
+       getChordShapes(chordName).then(shapes => {
+        if (this._modalChord !== chordName) return;
+        this._chordSVGContent = shapes.length > 0 ? RenderShape(shapes[0]) : html`<p>No shape found</p>`;
+       });
+    }
   }
   _closeModal() {
     this._modalChord = null;
@@ -59,16 +72,19 @@ export class SongRenderer extends LitElement {
     }
   }
   _renderModal() {
-    const shapes = this._modalChord ? getChordShapes(this._modalChord) : [];
-    const svgContent = shapes.length > 0 ? RenderShape(shapes[0]) : html`<p>No shape found</p>`;
+    
     return html`
       <dialog @click=${this._closeModal} @close=${this._closeModal}>
         <div class="modal" @click=${e => e.stopPropagation()}>
           <h2>${this._modalChord}</h2>
-          ${svgContent}
+          ${this._chordSVGContent}
         </div>
       </dialog>
     `;
+  }
+  async _getShapesForChord(chordName){
+    const shapes = await getChordShapes(chordName);
+    return shapes || [];
   }
   render() {
     /**@type {Song} */
