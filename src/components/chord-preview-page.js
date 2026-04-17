@@ -31,8 +31,8 @@ export class ChordPreviewPage extends LitElement {
         return RenderShape(shapes[0]);
     }
 
-    render() {
-        const chordNames = getAllChordNames();
+    async render() {
+        const chordNames = await getAllChordNames();
         return html`
             <div>
                 <h2>Chord Preview</h2>

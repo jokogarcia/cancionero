@@ -9,8 +9,17 @@ export class SongRenderer extends LitElement {
   static properties = {
     content: { type: Object },
     _modalChord: { type: String, state: true },
+    _chordsReady: { type: Boolean, state: true },
   };
   static allChordNames = null;
+
+  async connectedCallback() {
+    super.connectedCallback();
+    if (!SongRenderer.allChordNames) {
+      SongRenderer.allChordNames = await getAllChordNames();
+    }
+    this._chordsReady = true;
+  }
   /**
    * 
    * @param {string} line 
@@ -20,9 +29,6 @@ export class SongRenderer extends LitElement {
     * character, a single space is wrapped instead.
    */
   static processSongLine(line){
-    if(!this.allChordNames){
-      this.allChordNames = getAllChordNames();
-    }
     const tokens = line.split(/(\s+)/);
     return html`${tokens.map(token => {
       if(/^\s+$/.test(token) || token === ''){
@@ -71,6 +77,9 @@ export class SongRenderer extends LitElement {
       return html`<song-renderer-v2 .content=${song}></song-renderer-v2>`;
     }
     else if(song.version == 1){
+      if(!this._chordsReady){
+        return html`<p>Loading…</p>`;
+      }
       const lines = song.content.split('\n');
     return html`
       <h1>${song.title}</h1>
