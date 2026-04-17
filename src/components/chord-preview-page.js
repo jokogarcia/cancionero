@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
-import { getAllChordNames, getChordShapes } from '../services/chords.js';
-import { RenderShape } from './chord-renderer.js';
+import { getAllChordNames } from '../services/chords.js';
+import './chord-visualizer.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -11,44 +11,30 @@ export class ChordPreviewPage extends LitElement {
     static properties = {
         _selectedChord: { state: true },
         _chordNames: { state: true },
-        _shapes: { state: true },
     };
 
     constructor() {
         super();
         this._selectedChord = 'D';
         this._chordNames = [];
-        this._shapes = [];
     }
 
     async connectedCallback() {
         super.connectedCallback();
         this._chordNames = await getAllChordNames();
-        this._shapes = await getChordShapes(this._selectedChord);
     }
 
-    async _selectChord(name) {
+    _selectChord(name) {
         this._selectedChord = name;
-        const shapes = await getChordShapes(name);
-        if (this._selectedChord !== name) return;
-        this._shapes = shapes;
-    }
-
-    _renderChordSvg() {
-        if (!this._shapes.length) {
-            return html`<p>No shape found for "${this._selectedChord}"</p>`;
-        }
-        return RenderShape(this._shapes[0]);
     }
 
     render() {
-        const frets = this._shapes[0]?.frets?.join(' ') ?? '';
         return html`
             <div>
                 <h2>Chord Preview</h2>
                 <p>Selected: ${this._selectedChord}</p>
                 <div class="svg-container">
-                    ${this._renderChordSvg()}
+                    <chord-visualizer .chordName=${this._selectedChord}></chord-visualizer>
                 </div>
                 <div class="buttons">
                     ${this._chordNames.map(name => html`
@@ -58,7 +44,6 @@ export class ChordPreviewPage extends LitElement {
                         >${name}</button>
                     `)}
                 </div>
-                <p>Frets: ${frets} </p>
                 <button class="back" @click=${() => navigate('/')}>Back</button>
             </div>
         `;

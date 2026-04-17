@@ -2,21 +2,21 @@
 
 import { LitElement, html, css } from 'lit';
 import "./song-renderer-v2.js";
-import { getAllChordNames, getChordShapes } from '../services/chords.js';
-import { RenderShape } from './chord-renderer.js';
+import './chord-visualizer.js';
+import { getAllChordNames } from '../services/chords.js';
 export class SongRenderer extends LitElement {
     
   static properties = {
     content: { type: Object },
     _modalChord: { type: String, state: true },
     _chordsReady: { type: Boolean, state: true },
-    _chordSVGContent: { state: true },
   };
   static allChordNames = null;
 
   constructor() {
     super();
-    this._chordSVGContent = html`<p>Loading...</p>`;
+    this._modalChord = null;
+    this._chordsReady = false;
   }
 
   async connectedCallback() {
@@ -51,11 +51,6 @@ export class SongRenderer extends LitElement {
     const chordName = e.target.closest('a.chord-link')?.getAttribute('data-chord');
     if (chordName){
        this._modalChord = chordName;
-       this._chordSVGContent = html`<p>Loading...</p>`;
-       getChordShapes(chordName).then(shapes => {
-        if (this._modalChord !== chordName) return;
-        this._chordSVGContent = shapes.length > 0 ? RenderShape(shapes[0]) : html`<p>No shape found</p>`;
-       });
     }
   }
   _closeModal() {
@@ -77,15 +72,12 @@ export class SongRenderer extends LitElement {
       <dialog @click=${this._closeModal} @close=${this._closeModal}>
         <div class="modal" @click=${e => e.stopPropagation()}>
           <h2>${this._modalChord}</h2>
-          ${this._chordSVGContent}
+          <chord-visualizer .chordName=${this._modalChord}></chord-visualizer>
         </div>
       </dialog>
     `;
   }
-  async _getShapesForChord(chordName){
-    const shapes = await getChordShapes(chordName);
-    return shapes || [];
-  }
+
   render() {
     /**@type {Song} */
     const song = this.content;

@@ -18,26 +18,34 @@
 
 function getBars(fingering, frets){
     if(!fingering) return [];
-    fingering = fingering.map(f => parseInt(f,10));
+    const fn = fingering.map(f=>parseInt(f,10));
     const bars = [];
-    // if there are repeated finger numbers it indicates a bar
-    const fingerCounts = {};
-    fingering.forEach((f,i) => {
+    const finger_frets = new Map();
+    fn.forEach((f, i) => {
         if(f > 0){
-            fingerCounts[f] = fingerCounts[f] || [];
-            fingerCounts[f].push(i);
+            if(!finger_frets.has(f)){
+                finger_frets.set(f, []);
+            }
+            finger_frets.get(f).push({ fret: frets[i], string: i + 1 });
         }
     });
-    for(const finger in fingerCounts){
-        const strings = fingerCounts[finger];
-        if(strings.length > 1){
+    //array of the fingers that have more than one position
+    const barringFingers = Array.from(finger_frets.entries()).filter(([finger, positions]) => positions.length > 1);
+    for(const [finger, positions] of barringFingers){
+        const frets = positions.map(p => p.fret);
+        const minFret = Math.min(...frets);
+        const maxFret = Math.max(...frets);
+        if(maxFret - minFret <= 1){
             bars.push({
-                fret: frets[strings[0]],
-                fromString: Math.min(...strings) + 1,
-                toString: Math.max(...strings) + 1,
+                fret: minFret,
+                fromString: Math.min(...positions.map(p => p.string)),
+                toString: Math.max(...positions.map(p => p.string)),
             });
         }
     }
+    return bars;
+
+
 
 }
 
@@ -51,16 +59,18 @@ export async function getChordShapes(name){
     const _chord = chords[name];
 
     if(!_chord || !_chord[0]) return [];
-    const chord=_chord[0];
-    const positions = chord.positions || [];
-    const frets = positions.map(f => f === 'x' ? -1 : parseInt(f,10));
-    const bars = getBars(chord.fingerings?.[0]?.fingers, frets);
-    return [{
-        id: `${name}-0`,
-        name,
-        frets,
-        bars,
-    }];
+    return _chord.map(c=>{
+        const positions = c.positions || [];
+        const frets = positions.map(f => f === 'x' ? -1 : parseInt(f,10));
+        const bars = getBars(c.fingerings?.[0], frets);
+        return {
+             id: `${name}-0`,
+            name,
+            frets,
+            bars,
+        }
+    })
+    
    
 }
 let allChords=null;

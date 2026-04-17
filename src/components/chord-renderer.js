@@ -3,6 +3,14 @@
 
 import { svg } from 'lit';
 
+ const xoffset = 15;
+ const yoffset = 10;
+ const fretSpacing = 30;
+ const stringSpacing = 10;
+function fretToX(fret, fretOffset = 0) {
+    const offset = fretOffset > 0 ? fretOffset  : 1;
+    return xoffset +fretSpacing * (fret - offset ) + fretSpacing/2;
+}
 /**
  * Returns SVG representation of the chord shape for rendering on the frontend.
  * @param {ChordShape} chordShape
@@ -11,19 +19,11 @@ import { svg } from 'lit';
 export function RenderShape(chordShape) {
     const frets = chordShape.frets;
     const bars = chordShape.bars || [];
-    let lowerFret = Math.min(...frets.filter(f => f >= 0));
     const upperFret = Math.max(...frets);
-    if(upperFret - lowerFret < 5) {
-        lowerFret = 0;
-    }
-    const fretCount = upperFret - lowerFret + 1;
-    if(fretCount > 5) {
-        throw new Error("Chord shape is too wide to render.");
-    }
-    const xoffset = 15;
-    const yoffset = 10;
-    const fretSpacing = 30;
-    const stringSpacing = 10;
+    const lowerFret = Math.min(...frets.filter(f => f > 0));
+    const fretOffset = upperFret > 4 ? lowerFret : 0;
+   
+   
     const svgContent=svg`<svg width="200" height="100" 
       viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
   <style>
@@ -81,20 +81,20 @@ export function RenderShape(chordShape) {
   ${frets.map((fret, index) => {
     if(fret === -1) {
       return svg`<use href="#icon-mute" x="${xoffset-5}" y="${yoffset+stringSpacing*index}" />`;
-    } else if(fret === lowerFret) {
+    } else if(fret === 0) {
       return svg``;
     } else {
-      return svg`<circle class="finger" cx="${xoffset+fretSpacing/2+(fret-lowerFret-1)*fretSpacing}" cy="${yoffset+stringSpacing*index}" r="3" id="finger-string-${index+1}" />`;
+      return svg`<circle class="finger" cx="${fretToX(fret, fretOffset)}" cy="${yoffset+stringSpacing*index}" r="3" id="finger-string-${index+1}" />`;
     }
   })}
   ${bars.map(bar => {
     const y1 = yoffset + stringSpacing * (bar.fromString - 1);
     const y2 = yoffset + stringSpacing * (bar.toString - 1);
-    const x = xoffset + fretSpacing / 2 + (bar.fret - lowerFret -1) * fretSpacing;
+    const x = fretToX(bar.fret, fretOffset);
     return svg`<line class="bar" x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" />`;
   })}
 
-  <text x="15" y="12" transform="rotate(270,15,8)">${lowerFret}</text>
+  <text x="15" y="12" transform="rotate(270,15,8)">${fretOffset !== 0 ? fretOffset : ''}</text>
   
 </svg>`;
     return svgContent;
