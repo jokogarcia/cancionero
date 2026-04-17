@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "vite build && rsync -avz --delete dist/ joaquin@irazu.com.ar:/www/cancionero"
   },
   "dependencies": {
     "firebase": "^11.6.0",
