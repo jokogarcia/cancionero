@@ -32,9 +32,9 @@ function getBars(fingering, frets){
     //array of the fingers that have more than one position
     const barringFingers = Array.from(finger_frets.entries()).filter(([finger, positions]) => positions.length > 1);
     for(const [finger, positions] of barringFingers){
-        const frets = positions.map(p => p.fret);
-        const minFret = Math.min(...frets);
-        const maxFret = Math.max(...frets);
+        const barFrets = positions.map(p => p.fret);
+        const minFret = Math.min(...barFrets);
+        const maxFret = Math.max(...barFrets);
         if(maxFret - minFret <= 1){
             bars.push({
                 fret: minFret,
