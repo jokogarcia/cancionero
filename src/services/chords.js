@@ -64,7 +64,7 @@ export async function getChordShapes(name){
         const frets = positions.map(f => f === 'x' ? -1 : parseInt(f,10));
         const bars = getBars(c.fingerings?.[0], frets);
         return {
-             id: `${name}-0`,
+             id: `${name}-0-${frets.join('')}`,
             name,
             frets,
             bars,

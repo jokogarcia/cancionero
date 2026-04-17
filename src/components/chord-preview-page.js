@@ -23,7 +23,12 @@ export class ChordPreviewPage extends LitElement {
 
     async connectedCallback() {
         super.connectedCallback();
-        this._chordNames = await getAllChordNames();
+        try {
+            this._chordNames = await getAllChordNames();
+        } catch (error) {
+            console.error('Failed to load chord names:', error);
+            this._chordNames = [];
+        }
     }
 
     _selectChord(name) {

@@ -21,8 +21,13 @@ export class SongRenderer extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback();
-    if (!SongRenderer.allChordNames) {
-      SongRenderer.allChordNames = await getAllChordNames();
+    try {
+      if (!SongRenderer.allChordNames) {
+        SongRenderer.allChordNames = new Set(await getAllChordNames());
+      }
+    } catch (error) {
+      console.error('Failed to load chord names:', error);
+      SongRenderer.allChordNames = new Set();
     }
     this._chordsReady = true;
   }
@@ -30,9 +35,9 @@ export class SongRenderer extends LitElement {
    * 
    * @param {string} line 
    * @returns {import('lit').TemplateResult} Html representation of the line.
-    * Each chord marker [X] is removed and the following character is wrapped in
-    * <span class="chord" data-text="X">c</span>. If there is no following
-    * character, a single space is wrapped instead.
+    * Each chord marker is replaced with an anchor element with class "chord-link" and 
+    * a data-chord attribute containing the chord name. Non-chord text and whitespace 
+    * are preserved as-is.
    */
   static processSongLine(line){
     const tokens = line.split(/(\s+)/);
@@ -40,7 +45,7 @@ export class SongRenderer extends LitElement {
       if(/^\s+$/.test(token) || token === ''){
         return token;
       }
-      if(this.allChordNames.includes(token)){
+      if(SongRenderer.allChordNames.has(token)){
         return html`<a href="#" class="chord-link" data-chord=${token}>${token}</a>`;
       }
       return token;
