@@ -113,3 +113,86 @@ export async function getSongsByUploader(uploaderId) {
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
+
+export function convertV1ToV2(song) {
+    if (song.version === 1) {
+        const contentV1 = song.content || '';
+        const lines=[];
+        let state="finding-chords"
+        let found_chords=[]
+        for (const line of contentV1.split('\n')) {
+            if(line.trim() === '') {
+                lines.push(line)
+                continue; // leave blank lines untouched
+            }
+            if(state=="finding-chords"){
+                found_chords=findChordsInLine(line);
+                if(found_chords.length>0){
+                    state="placing-chords"
+                    continue;
+                }else{
+                    continue;
+                }
+            }else if (state == "placing-chords"){
+                //splice chords into line, surrounded by '[' ']'
+                let lineWithChords = line;
+                for(const {chord,position} of found_chords){
+                    lineWithChords = lineWithChords.slice(0, position) + '[' + chord + ']' + lineWithChords.slice(position);
+                    //adjust positions of remaining chords
+                    for(let c of found_chords){
+                        if(c.position > position){
+                            c.position += chord.length + 2; // account for added brackets and chord name length
+                        }
+                    }
+                }
+                lines.push(lineWithChords)
+                state="finding-chords";
+                continue;
+            }
+
+        }
+        return {
+            ...song,
+            version: 2,
+            isPublic: song.isPublic === true,
+            isHiddenDMCA: false,
+            content: lines.join('\n'),
+        };
+    }
+    return song;
+}
+
+/**
+ * Finds chord names in a line. Returns an array of chord names and their positions in the line.
+ * E.g. for input "         C                Gm   ", it would return:
+ * [
+ *   { chord: 'C', position: 10 },
+ *   { chord: 'Gm', position: 26 }
+ * ]
+ * @param {string} line - The line of text to analyze.
+ * @param {Set<string>} allChordNames - A set of all valid chord names for quick lookup.
+ * @return {Array<{chord: string, position: number}>}
+ */
+export function findChordsInLine(line) {
+    // Source - https://stackoverflow.com/a/46522424
+    // Posted by Amit
+    // Retrieved 2026-04-20, License - CC BY-SA 3.0
+
+    const notes = "[CDEFGAB]",
+    accidentals = "(b|bb)?",
+    chords = "(m|maj7|maj|min7|min|sus)?",
+    suspends = "(1|2|3|4|5|6|7|8|9)?",
+    sharp = "(#)?",
+    regex = new RegExp("\\b" + notes + accidentals + chords + suspends + "\\b" + sharp, "g");
+
+    /**@type {Array<{chord: string, position: number}>} */
+    const matches = [];
+
+    let match;
+    while ((match = regex.exec(line)) !== null) {
+        const chord = match[0];
+        matches.push({ chord, position: match.index });
+    }
+
+    return matches;
+}

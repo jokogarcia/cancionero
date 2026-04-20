@@ -4,6 +4,7 @@ import { LitElement, html, css } from 'lit';
 import "./song-renderer-v2.js";
 import './chord-visualizer.js';
 import { getAllChordNames } from '../services/chords.js';
+import { convertV1ToV2 } from '../services/songs.js';
 export class SongRenderer extends LitElement {
     
   static properties = {
@@ -84,8 +85,9 @@ export class SongRenderer extends LitElement {
   }
 
   render() {
+
     /**@type {Song} */
-    const song = this.content;
+    const song = this.content.version === 1 ? convertV1ToV2(this.content) : this.content;
     if(song.version == 2){
       return html`<song-renderer-v2 .content=${song}></song-renderer-v2>`;
     }

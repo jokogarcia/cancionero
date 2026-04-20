@@ -1,15 +1,22 @@
 /** @typedef {import('../services/songs.js').Song} Song */
 
 import { LitElement, html, css } from 'lit';
+import './chord-visualizer.js';
 
 export class SongRendererV2 extends LitElement {
-    
+
   static properties = {
     content: { type: Object },
+    _modalChord: { type: String, state: true },
   };
+
+  constructor() {
+    super();
+    this._modalChord = null;
+  }
   /**
-   * 
-   * @param {string} line 
+   *
+   * @param {string} line
    * @returns {import('lit').TemplateResult} Html representation of the line.
     * Each chord marker [X] is removed and the following character is wrapped in
     * <span class="chord" data-text="X">c</span>. If there is no following
@@ -55,18 +62,39 @@ export class SongRendererV2 extends LitElement {
     const chordElements = this.shadowRoot.querySelectorAll('span.chord');
     chordElements.forEach(el => {
       el.addEventListener('click', () => {
-        const chordName = el.textContent;
-        alert(`You clicked on chord: ${chordName}`);
+        this._modalChord = el.dataset.text;
       });
     });
+  }
+  _closeModal() {
+    this._modalChord = null;
   }
   firstUpdated() {
     this.addChordClickListeners();
   }
+  updated(changedProps) {
+    if (changedProps.has('_modalChord')) {
+      const dialog = this.renderRoot.querySelector('dialog');
+      if (this._modalChord && dialog && !dialog.open) {
+        dialog.showModal();
+      } else if (!this._modalChord && dialog && dialog.open) {
+        dialog.close();
+      }
+    }
+  }
+  _renderModal() {
+    return html`
+      <dialog @click=${this._closeModal} @close=${this._closeModal}>
+        <div class="modal" @click=${e => e.stopPropagation()}>
+          <h2>${this._modalChord}</h2>
+          <chord-visualizer .chordName=${this._modalChord}></chord-visualizer>
+        </div>
+      </dialog>
+    `;
+  }
   render() {
     /**@type {Song} */
-    const song = this.content;
-
+    const song = this.content.version === 1 ? convertV1ToV2(this.content) : this.content;
     return html`
       <h1>${song.title}</h1>
         ${song.artist ? html`<h2>${song.artist}</h2>` : ''}
@@ -75,6 +103,7 @@ export class SongRendererV2 extends LitElement {
         <div>
           ${song.content.split('\n').map(line => html`<p>${SongRendererV2.processSongLine(line)}</p>`)}
         </div>
+        ${this._renderModal()}
     `;
   }
   static styles=css`
@@ -84,10 +113,16 @@ export class SongRendererV2 extends LitElement {
  p {
   position: relative;
   font-size: 1.2em;
+  min-height: 0.5em;
+  line-height: 1.6em;
 }
 
 span {
   position: relative;
+}
+
+span.chord {
+  cursor: pointer;
 }
 
 span::before {
@@ -96,7 +131,41 @@ span::before {
   color: red;
   font-size: 0.8em;
   content: attr(data-text);
-}`;
+}
+  dialog {
+    border: none;
+    border-radius: 8px;
+    padding: 0;
+    background: transparent;
+  }
+  dialog::backdrop {
+    background: rgba(0,0,0,0.5);
+  }
+  .modal {
+    background: white;
+    color: black;
+    border-radius: 8px;
+    padding: 1.5em 2em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1em;
+    min-width: 160px;
+  }
+  .modal h2 {
+    margin: 0;
+  }
+  .modal button {
+    padding: 0.4em 1.2em;
+    cursor: pointer;
+  }
+  @media (prefers-color-scheme: dark) {
+    .modal {
+      background: #1e1e1e;
+      color: white;
+    }
+  }
+`;
 }
 
 customElements.define('song-renderer-v2', SongRendererV2);
