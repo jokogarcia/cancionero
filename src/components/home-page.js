@@ -4,6 +4,8 @@ import { LitElement, html, css } from 'lit';
 import { findSong } from '../services/songs.js';
 import { getFavorites, isFavorite, addFavorite, removeFavorite } from '../services/favorites.js';
 import { subscribeToAuth, signOutUser } from '../services/auth.js';
+import { pickCrdFile, setLocalSong } from '../services/local-song.js';
+import { scanLocalFolder, getLocalFolderName } from '../services/local-folder.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -15,6 +17,8 @@ export class HomePage extends LitElement {
         _query: { type: String, state: true },
         _favorites: { type: Array, state: true },
         _allSongs: { type: Array, state: true },
+        _localSongs: { type: Array, state: true },
+        _localFolderName: { type: String, state: true },
         _loading: { type: Boolean, state: true },
         _currentUser: { type: Object, state: true },
     };
@@ -24,6 +28,8 @@ export class HomePage extends LitElement {
         this._query = '';
         this._favorites = getFavorites();
         this._allSongs = [];
+        this._localSongs = [];
+        this._localFolderName = getLocalFolderName();
         this._loading = true;
         this._currentUser = null;
         this._unsubAuth = null;
@@ -35,6 +41,7 @@ export class HomePage extends LitElement {
             this._currentUser = user;
         });
         this._loadSongs();
+        this._loadLocalSongs();
     }
 
     disconnectedCallback() {
@@ -49,6 +56,30 @@ export class HomePage extends LitElement {
         } finally {
             this._loading = false;
         }
+    }
+
+    async _loadLocalSongs() {
+        if (!this._localFolderName) return;
+        try {
+            this._localSongs = await scanLocalFolder();
+        } catch (err) {
+            console.warn('Local folder scan failed:', err);
+            this._localSongs = [];
+        }
+    }
+
+    async _retryLocalScan() {
+        try {
+            this._localSongs = await scanLocalFolder({ requestPermission: true });
+        } catch (err) {
+            alert('Could not read folder: ' + err.message);
+        }
+    }
+
+    _openLocalSong(e, song) {
+        e.stopPropagation();
+        setLocalSong(song);
+        navigate('/open');
     }
 
     _onSearch(e) {
@@ -69,6 +100,15 @@ export class HomePage extends LitElement {
         await signOutUser();
     }
 
+    async _openLocalFile() {
+        try {
+            const song = await pickCrdFile();
+            if (song) navigate('/open');
+        } catch (err) {
+            alert('Could not open file: ' + err.message);
+        }
+    }
+
     _getFilteredSongs() {
         const q = this._query.trim();
         if (!q) return this._allSongs;
@@ -79,6 +119,30 @@ export class HomePage extends LitElement {
             song.author?.toLowerCase().includes(lower) ||
             song.content?.toLowerCase().includes(lower)
         );
+    }
+
+    _getFilteredLocalSongs() {
+        const q = this._query.trim();
+        if (!q) return this._localSongs;
+        const lower = q.toLowerCase();
+        return this._localSongs.filter(song =>
+            song.title?.toLowerCase().includes(lower) ||
+            song.artist?.toLowerCase().includes(lower) ||
+            song.author?.toLowerCase().includes(lower) ||
+            song.content?.toLowerCase().includes(lower)
+        );
+    }
+
+    _renderLocalSongItem(song) {
+        return html`
+            <li class="song-item" @click=${(e) => this._openLocalSong(e, song)}>
+                <span class="song-info">
+                    <span class="song-title">${song.title}</span>
+                    <span class="song-artist">${song.artist || 'Local file'}</span>
+                </span>
+                <span class="local-tag">Local</span>
+            </li>
+        `;
     }
 
     _renderSongItem(song) {
@@ -101,6 +165,7 @@ export class HomePage extends LitElement {
 
     render() {
         const filteredSongs = this._getFilteredSongs();
+        const filteredLocalSongs = this._getFilteredLocalSongs();
         const isSearching = this._query.trim().length > 0;
         const favSongs = this._favorites
             .map(id => this._allSongs.find(s => s.id === id))
@@ -110,6 +175,7 @@ export class HomePage extends LitElement {
             : [];
         const showFavorites = favSongs.length > 0 && !isSearching;
         const showMySongs = mySongs.length > 0 && !isSearching;
+        const showLocal = this._localFolderName && (filteredLocalSongs.length > 0 || this._localSongs.length > 0);
         const nonSpecialResults = filteredSongs.filter(s =>
             !this._favorites.includes(s.id) &&
             !(showMySongs && s.uploaderId === this._currentUser?.uid)
@@ -128,6 +194,7 @@ export class HomePage extends LitElement {
                     />
                 </div>
                 <div class="header-actions">
+                    <button class="open-btn" @click=${this._openLocalFile} title="Open a .crd file from your device" aria-label="Open file">📂</button>
                     <button class="settings-btn" @click=${() => navigate('/settings')} title="Settings" aria-label="Settings">⚙</button>
                     ${this._currentUser ? html`
                         <button class="add-btn" @click=${() => navigate('/add-song')} aria-label="Add a song">+ Add Song</button>
@@ -160,6 +227,21 @@ export class HomePage extends LitElement {
                             <ul class="song-list">
                                 ${favSongs.map(s => this._renderSongItem(s))}
                             </ul>
+                        </section>
+                    ` : ''}
+
+                    ${showLocal ? html`
+                        <section>
+                            <h2>📂 Local Files <span class="folder-name">(${this._localFolderName})</span></h2>
+                            ${this._localSongs.length === 0 ? html`
+                                <p class="empty">
+                                    No songs loaded. <button class="link-btn" @click=${this._retryLocalScan}>Grant access</button> to scan this folder.
+                                </p>
+                            ` : html`
+                                <ul class="song-list">
+                                    ${filteredLocalSongs.map(s => this._renderLocalSongItem(s))}
+                                </ul>
+                            `}
                         </section>
                     ` : ''}
 
@@ -312,6 +394,36 @@ export class HomePage extends LitElement {
             color: var(--accent, #aa3bff);
         }
 
+        .local-tag {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: var(--accent-bg, rgba(170, 59, 255, 0.1));
+            color: var(--accent, #aa3bff);
+            border: 1px solid var(--accent-border, rgba(170, 59, 255, 0.5));
+            flex-shrink: 0;
+        }
+
+        .folder-name {
+            text-transform: none;
+            letter-spacing: normal;
+            font-weight: 400;
+            color: var(--text, #6b6375);
+            font-size: 0.85rem;
+        }
+
+        .link-btn {
+            background: none;
+            border: none;
+            color: var(--accent, #aa3bff);
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 0;
+            font: inherit;
+        }
+
         .empty {
             color: var(--text, #6b6375);
             font-size: 0.95rem;
@@ -367,6 +479,7 @@ export class HomePage extends LitElement {
             background: var(--accent-bg, rgba(170, 59, 255, 0.08));
         }
 
+        .open-btn,
         .settings-btn {
             background: none;
             border: 1px solid var(--border, #e5e4e7);
@@ -383,6 +496,7 @@ export class HomePage extends LitElement {
             transition: background 0.15s;
         }
 
+        .open-btn:hover,
         .settings-btn:hover {
             background: var(--accent-bg, rgba(170, 59, 255, 0.08));
         }

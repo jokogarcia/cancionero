@@ -4,6 +4,7 @@ import { LitElement, html, css } from 'lit';
 import { getSongById } from '../services/songs.js';
 import { isFavorite, addFavorite, removeFavorite } from '../services/favorites.js';
 import { getSettings } from '../services/settings.js';
+import { getLocalSong } from '../services/local-song.js';
 import './song-renderer.js';
 
 function navigate(path) {
@@ -14,6 +15,7 @@ function navigate(path) {
 export class SongPage extends LitElement {
     static properties = {
         songId: { type: String },
+        source: { type: String },
         _song: { type: Object, state: true },
         _loading: { type: Boolean, state: true },
         _favorite: { type: Boolean, state: true },
@@ -44,7 +46,7 @@ export class SongPage extends LitElement {
     }
 
     updated(changedProps) {
-        if (changedProps.has('songId')) {
+        if (changedProps.has('songId') || changedProps.has('source')) {
             this._stopScroll();
             this._loadSong();
         }
@@ -54,9 +56,14 @@ export class SongPage extends LitElement {
         this._loading = true;
         this._song = null;
         try {
-            const song = await getSongById(this.songId);
-            this._song = song;
-            this._favorite = isFavorite(this.songId);
+            if (this.source === 'local') {
+                this._song = getLocalSong();
+                this._favorite = false;
+            } else {
+                const song = await getSongById(this.songId);
+                this._song = song;
+                this._favorite = isFavorite(this.songId);
+            }
         } finally {
             this._loading = false;
         }
@@ -154,6 +161,7 @@ export class SongPage extends LitElement {
         }
         const favLabel = this._favorite ? 'Remove from favorites' : 'Add to favorites';
         const playLabel = this._playing ? 'Pause auto-scroll' : 'Play auto-scroll';
+        const isLocal = this.source === 'local';
         return html`
             <song-renderer .content=${this._song}></song-renderer>
             <div class="toolbar">
@@ -180,15 +188,17 @@ export class SongPage extends LitElement {
                     />
                     <span class="rate-unit">lps</span>
                 </label>
-                <button
-                    class="fav-btn ${this._favorite ? 'is-fav' : ''}"
-                    title=${favLabel}
-                    aria-label=${favLabel}
-                    aria-pressed=${this._favorite}
-                    @click=${this._toggleFavorite}
-                >
-                    ${this._favorite ? '★' : '☆'}
-                </button>
+                ${isLocal ? html`<span class="local-badge" title="Loaded from a local .crd file">Local</span>` : html`
+                    <button
+                        class="fav-btn ${this._favorite ? 'is-fav' : ''}"
+                        title=${favLabel}
+                        aria-label=${favLabel}
+                        aria-pressed=${this._favorite}
+                        @click=${this._toggleFavorite}
+                    >
+                        ${this._favorite ? '★' : '☆'}
+                    </button>
+                `}
             </div>
         `;
     }
@@ -282,6 +292,16 @@ export class SongPage extends LitElement {
         .loading {
             padding: 24px;
             color: var(--text, #6b6375);
+        }
+
+        .local-badge {
+            margin-left: auto;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            border-radius: 999px;
+            background: var(--accent-bg, rgba(170, 59, 255, 0.15));
+            color: var(--accent, #aa3bff);
+            border: 1px solid var(--accent-border, rgba(170, 59, 255, 0.5));
         }
     `;
 }

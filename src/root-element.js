@@ -6,6 +6,7 @@ import './components/login-page.js'
 import './components/chord-preview-page.js'
 import './components/settings-page.js'
 import { applyTheme, applyFontSize } from './services/settings.js'
+import { parseCrdFile, setLocalSong } from './services/local-song.js'
 
 /**
  * An example element.
@@ -23,12 +24,31 @@ export class RootElement extends LitElement {
     this._path = window.location.pathname;
     applyTheme();
     applyFontSize();
+    this._setupLaunchQueue();
   }
 
   connectedCallback() {
     super.connectedCallback();
     this._onPopState = () => { this._path = window.location.pathname; };
     window.addEventListener('popstate', this._onPopState);
+  }
+
+  _setupLaunchQueue() {
+    if (!('launchQueue' in window)) return;
+    window.launchQueue.setConsumer(async (launchParams) => {
+      if (!launchParams || !launchParams.files || launchParams.files.length === 0) return;
+      try {
+        const handle = launchParams.files[0];
+        const file = await handle.getFile();
+        const song = await parseCrdFile(file);
+        setLocalSong(song);
+        history.pushState(null, '', '/open');
+        this._path = '/open';
+      } catch (err) {
+        console.error('Failed to open launched file:', err);
+        alert('Could not open file: ' + err.message);
+      }
+    });
   }
 
   disconnectedCallback() {
@@ -53,6 +73,9 @@ export class RootElement extends LitElement {
     if (this._path === '/settings') {
       return { route: 'settings' };
     }
+    if (this._path === '/open') {
+      return { route: 'open' };
+    }
     return { route: 'home' };
   }
 
@@ -72,6 +95,9 @@ export class RootElement extends LitElement {
     }
     if (route.route === 'settings') {
       return html`<settings-page></settings-page>`;
+    }
+    if (route.route === 'open') {
+      return html`<song-page source="local"></song-page>`;
     }
     return html`<home-page></home-page>`;
   }

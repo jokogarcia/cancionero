@@ -1,6 +1,12 @@
 import { LitElement, html, css } from 'lit';
 import { getSettings, updateSettings, resetSettings, applyTheme, applyFontSize } from '../services/settings.js';
 import { getFavorites } from '../services/favorites.js';
+import {
+    pickLocalFolder,
+    clearLocalFolder,
+    getLocalFolderName,
+    isLocalFolderSupported,
+} from '../services/local-folder.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -11,12 +17,14 @@ export class SettingsPage extends LitElement {
     static properties = {
         _settings: { type: Object, state: true },
         _favCount: { type: Number, state: true },
+        _folderName: { type: String, state: true },
     };
 
     constructor() {
         super();
         this._settings = getSettings();
         this._favCount = getFavorites().length;
+        this._folderName = getLocalFolderName();
     }
 
     _onScrollRateChange(e) {
@@ -51,6 +59,20 @@ export class SettingsPage extends LitElement {
         this._settings = resetSettings();
         applyTheme(this._settings.theme);
         applyFontSize(this._settings.fontSize);
+    }
+
+    async _pickFolder() {
+        try {
+            const result = await pickLocalFolder();
+            if (result) this._folderName = result.name;
+        } catch (err) {
+            alert('Could not select folder: ' + err.message);
+        }
+    }
+
+    async _clearFolder() {
+        await clearLocalFolder();
+        this._folderName = null;
     }
 
     render() {
@@ -107,6 +129,32 @@ export class SettingsPage extends LitElement {
                             <option value="dark">Dark</option>
                         </select>
                     </label>
+                </section>
+
+                <section>
+                    <h2>Library</h2>
+                    <div class="row">
+                        <span class="label">
+                            <span class="name">Local files location</span>
+                            <span class="hint">
+                                ${!isLocalFolderSupported()
+                                    ? 'Not supported in this browser'
+                                    : this._folderName
+                                        ? html`Scanning <code>${this._folderName}</code> for .crd files on startup`
+                                        : 'Select a folder to scan for .crd files on startup'}
+                            </span>
+                        </span>
+                        <span class="button-group">
+                            <button
+                                class="action-btn"
+                                ?disabled=${!isLocalFolderSupported()}
+                                @click=${this._pickFolder}
+                            >${this._folderName ? 'Change' : 'Select folder'}</button>
+                            ${this._folderName ? html`
+                                <button class="danger-btn" @click=${this._clearFolder}>Clear</button>
+                            ` : ''}
+                        </span>
+                    </div>
                 </section>
 
                 <section>
@@ -246,6 +294,38 @@ export class SettingsPage extends LitElement {
 
         input[type="range"] {
             width: 180px;
+        }
+
+        .button-group {
+            display: inline-flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: var(--accent, #aa3bff);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font: inherit;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            opacity: 0.88;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        code {
+            font-family: var(--mono, ui-monospace, monospace);
+            padding: 1px 4px;
+            background: var(--code-bg, #f4f3ec);
+            border-radius: 3px;
         }
 
         .danger-btn {

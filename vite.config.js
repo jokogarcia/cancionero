@@ -35,6 +35,21 @@ export default defineConfig({
             purpose: 'any maskable',
           },
         ],
+        file_handlers: [
+          {
+            action: '/open',
+            accept: {
+              'application/x-crd': ['.crd'],
+            },
+            icons: [
+              { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+            ],
+            launch_type: 'single-client',
+          },
+        ],
+        launch_handler: {
+          client_mode: 'focus-existing',
+        },
       },
     }),
   ],
