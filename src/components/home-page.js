@@ -128,6 +128,7 @@ export class HomePage extends LitElement {
                     />
                 </div>
                 <div class="header-actions">
+                    <button class="settings-btn" @click=${() => navigate('/settings')} title="Settings" aria-label="Settings">⚙</button>
                     ${this._currentUser ? html`
                         <button class="add-btn" @click=${() => navigate('/add-song')} aria-label="Add a song">+ Add Song</button>
                         <button class="sign-out-btn" @click=${this._signOut} title="Sign out">
@@ -363,6 +364,26 @@ export class HomePage extends LitElement {
         }
 
         .login-btn:hover {
+            background: var(--accent-bg, rgba(170, 59, 255, 0.08));
+        }
+
+        .settings-btn {
+            background: none;
+            border: 1px solid var(--border, #e5e4e7);
+            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            color: var(--text-h, #08060d);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+
+        .settings-btn:hover {
             background: var(--accent-bg, rgba(170, 59, 255, 0.08));
         }
 

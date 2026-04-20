@@ -112,7 +112,7 @@ export class SongRendererV2 extends LitElement {
     }
  p {
   position: relative;
-  font-size: 1.2em;
+  font-size: calc(1.2em * var(--song-font-scale, 1));
   min-height: 0.5em;
   line-height: 1.6em;
 }

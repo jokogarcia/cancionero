@@ -3,6 +3,7 @@
 import { LitElement, html, css } from 'lit';
 import { getSongById } from '../services/songs.js';
 import { isFavorite, addFavorite, removeFavorite } from '../services/favorites.js';
+import { getSettings } from '../services/settings.js';
 import './song-renderer.js';
 
 function navigate(path) {
@@ -26,7 +27,7 @@ export class SongPage extends LitElement {
         this._loading = true;
         this._favorite = false;
         this._playing = false;
-        this._rate = 0.01;
+        this._rate = getSettings().scrollRate;
         this._rafId = null;
         this._lastFrame = 0;
         this._pixelAccum = 0;

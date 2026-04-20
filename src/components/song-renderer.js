@@ -131,7 +131,7 @@ export class SongRenderer extends LitElement {
     font-family: 'Courier New', Courier, monospace;
     white-space: pre;
     text-align: left;
-    font-size: x-small;
+    font-size: calc(0.75rem * var(--song-font-scale, 1));
    }
   dialog {
     border: none;

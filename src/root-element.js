@@ -4,6 +4,8 @@ import './components/song-page.js'
 import './components/add-song-page.js'
 import './components/login-page.js'
 import './components/chord-preview-page.js'
+import './components/settings-page.js'
+import { applyTheme, applyFontSize } from './services/settings.js'
 
 /**
  * An example element.
@@ -19,6 +21,8 @@ export class RootElement extends LitElement {
   constructor() {
     super()
     this._path = window.location.pathname;
+    applyTheme();
+    applyFontSize();
   }
 
   connectedCallback() {
@@ -46,6 +50,9 @@ export class RootElement extends LitElement {
     if (this._path === '/chord-preview') {
       return { route: 'chord-preview' };
     }
+    if (this._path === '/settings') {
+      return { route: 'settings' };
+    }
     return { route: 'home' };
   }
 
@@ -62,6 +69,9 @@ export class RootElement extends LitElement {
     }
     if (route.route === 'chord-preview') {
       return html`<chord-preview-page></chord-preview-page>`;
+    }
+    if (route.route === 'settings') {
+      return html`<settings-page></settings-page>`;
     }
     return html`<home-page></home-page>`;
   }
@@ -102,7 +112,7 @@ export class RootElement extends LitElement {
       }
 
       @media (prefers-color-scheme: dark) {
-        :host {
+        :host-context(:not([data-theme="light"])) {
           --text: #9ca3af;
           --text-h: #f3f4f6;
           --bg: #16171d;
@@ -120,6 +130,21 @@ export class RootElement extends LitElement {
         #social .button-icon {
           filter: invert(1) brightness(2);
         }
+      }
+
+      :host-context([data-theme="dark"]) {
+        --text: #9ca3af;
+        --text-h: #f3f4f6;
+        --bg: #16171d;
+        --border: #2e303a;
+        --code-bg: #1f2028;
+        --accent: #c084fc;
+        --accent-bg: rgba(192, 132, 252, 0.15);
+        --accent-border: rgba(192, 132, 252, 0.5);
+        --social-bg: rgba(47, 48, 58, 0.5);
+        --shadow:
+          rgba(0, 0, 0, 0.4) 0 10px 15px -3px,
+          rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
       }
 
       h1,
