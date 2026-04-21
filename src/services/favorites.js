@@ -1,4 +1,4 @@
-const FAVORITES_KEY = 'cancionero_favorites';
+const FAVORITES_KEY = 'coda_favorites';
 
 function loadFavorites() {
     try {

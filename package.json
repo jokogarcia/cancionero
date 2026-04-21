@@ -1,5 +1,5 @@
 {
-  "name": "cancionero",
+  "name": "coda",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "vite build && rsync -avz --delete dist/ joaquin@irazu.com.ar:/www/cancionero"
+    "deploy": "vite build && rsync -avz --delete dist/ joaquin@irazu.com.ar:/www/coda"
   },
   "dependencies": {
     "firebase": "^11.6.0",

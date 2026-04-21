@@ -77,7 +77,7 @@ let allChords=null;
 let loadChordsPromise = null;
 let waitForSyncPromise = null;
 
-const CHORDS_DB_NAME = 'cancionero-db';
+const CHORDS_DB_NAME = 'coda-db';
 const CHORDS_STORE_NAME = 'app-cache';
 const CHORDS_CACHE_KEY = 'chords';
 const CHORDS_SYNC_WAIT_TIMEOUT_MS = 15000;

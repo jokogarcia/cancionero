@@ -183,7 +183,7 @@ export class HomePage extends LitElement {
 
         return html`
             <header>
-                <h1>🎵 Cancionero</h1>
+                <h1>🎵 Coda</h1>
                 <div class="search-wrapper">
                     <input
                         type="search"

@@ -8,10 +8,10 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.js',
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['coda_simple.svg', 'coda_192.png'],
       manifest: {
-        name: 'Cancionero',
-        short_name: 'Cancionero',
+        name: 'Coda',
+        short_name: 'Coda',
         description: 'PWA for creating, viewing and sharing song chords with lyrics',
         theme_color: '#aa3bff',
         background_color: '#ffffff',
@@ -19,17 +19,17 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'coda_192.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'coda_512.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'coda_512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
