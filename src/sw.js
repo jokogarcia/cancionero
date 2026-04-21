@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 
-const CHORDS_DB_NAME = 'cancionero-db';
+const CHORDS_DB_NAME = 'coda-db';
 const CHORDS_STORE_NAME = 'app-cache';
 const CHORDS_CACHE_KEY = 'chords';
 const CHORDS_INITIAL_SYNC_TAG = 'sync-chords-cache-initial';

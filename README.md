@@ -1,4 +1,4 @@
-# cancionero
+# coda
 PWA for creating, viewing and sharing song chords with lyrics
 
 ## Setup

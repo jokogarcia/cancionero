@@ -34,7 +34,7 @@ export class LoginPage extends LitElement {
     render() {
         return html`
             <div class="container">
-                <h1>🎵 Cancionero</h1>
+                <h1>🎵 Coda</h1>
                 <p class="subtitle">Sign in to add and manage your songs.</p>
                 <button class="google-btn" @click=${this._signIn} ?disabled=${this._loading}>
                     <svg class="google-icon" viewBox="0 0 48 48" aria-hidden="true">
