@@ -13,7 +13,25 @@ export async function parseCrdFile(file) {
     try {
         obj = JSON.parse(text);
     } catch (e) {
-        throw new Error('File is not valid JSON');
+        if (await isProbablyBinary(file)) {
+            throw new Error('File appears to be binary, not a text/JSON song file');
+        }
+        if(text.includes('<html')){
+            throw new Error('File appears to be an HTML page, not a song file.');
+        }
+        // Process as plain text.
+        return {
+            id: `local:${file.name}`,
+            title: file.name.replace(/.crd$/i, '').replace(/.txt$/i, '').replace(/[-_]/g, ' '),
+            artist: '',
+            year:0,
+            isHiddenDMCA: false,
+            isPublic: false,
+            content: text,
+            album: '',
+            version: 1,
+            uploaderId: null,
+        }
     }
     if (!obj || typeof obj !== 'object') {
         throw new Error('File does not contain a song object');
@@ -24,7 +42,7 @@ export async function parseCrdFile(file) {
     const name = (file && file.name) || 'song.crd';
     return {
         id: `local:${name}`,
-        title: obj.title || name.replace(/\.crd$/i, ''),
+        title: obj.title || name.replace(/.crd$/i, '').replace(/.txt$/i, '').replace(/[-_]/g, ' '),
         artist: obj.artist || '',
         author: obj.author || '',
         album: obj.album || '',
@@ -36,6 +54,19 @@ export async function parseCrdFile(file) {
         isHiddenDMCA: false,
         uploaderId: null,
     };
+}
+
+/**
+ * Heuristic: a NUL byte in the first 8KB strongly suggests a binary file.
+ * @param {File|Blob} file
+ */
+async function isProbablyBinary(file, sampleSize = 8192) {
+    const buf = await file.slice(0, sampleSize).arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    for (const b of bytes) {
+        if (b === 0) return true;
+    }
+    return false;
 }
 
 /**
@@ -81,7 +112,7 @@ export function pickCrdFile() {
     return new Promise((resolve, reject) => {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.crd,application/json';
+        input.accept = '.crd,.txt,application/json,text/plain';
         input.style.display = 'none';
         input.addEventListener('change', async () => {
             const file = input.files && input.files[0];

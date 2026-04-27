@@ -100,8 +100,58 @@ async function ensurePermission(handle, requestIfNeeded) {
     return next === 'granted';
 }
 
+async function hasNestedFile(rootHandle, relativePath) {
+    const parts = relativePath.split('/').filter(Boolean);
+    const fileName = parts.pop();
+    if (!fileName) return false;
+
+    let current = rootHandle;
+    for (const part of parts) {
+        try {
+            current = await current.getDirectoryHandle(part);
+        } catch {
+            return false;
+        }
+    }
+
+    try {
+        await current.getFileHandle(fileName);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+async function detectOlgaArchive(rootHandle) {
+    const requiredFiles = [
+        'guitar/other_stuff/chordname.c',
+        'guitar/tabs/a/index.php.old',
+    ];
+
+    for (const relativePath of requiredFiles) {
+        if (!(await hasNestedFile(rootHandle, relativePath))) {
+            console.log(`Not an Olga archive: missing ${relativePath}`);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+async function scanDirectoryRecursive(directoryHandle, parentFolders, visitFile) {
+    for await (const entry of directoryHandle.values()) {
+        if (entry.kind === 'directory') {
+            await scanDirectoryRecursive(entry, [...parentFolders, entry.name], visitFile);
+            continue;
+        }
+        if (entry.kind === 'file') {
+            await visitFile(entry, parentFolders);
+        }
+    }
+}
+
 /**
- * Scan the stored folder and return parsed songs from every .crd file (non-recursive).
+ * Scan the stored folder recursively and return parsed songs from every .crd/.txt file.
  * @param {{ requestPermission?: boolean }} [opts]
  * @returns {Promise<Song[]>}
  */
@@ -113,17 +163,25 @@ export async function scanLocalFolder({ requestPermission = false } = {}) {
     if (!ok) return [];
 
     const songs = [];
-    for await (const entry of handle.values()) {
-        if (entry.kind !== 'file') continue;
-        if (!/\.crd$/i.test(entry.name)) continue;
+    const isOlga = await detectOlgaArchive(handle);
+    console.log("Scanning local folder",handle ," (Olga archive detected:", isOlga, ")...");
+    await scanDirectoryRecursive(handle, [], async (entry, parentFolders) => {
+        if (!/\.(crd|txt)$/i.test(entry.name)) return;
         try {
             const file = await entry.getFile();
             const song = await parseCrdFile(file);
-            songs.push({ ...song, _local: true });
+            const localSong = { ...song };
+            if (isOlga && parentFolders.length > 0) {
+                localSong.artist = parentFolders[parentFolders.length - 1];
+            }
+            songs.push({ ...localSong, _local: true });
         } catch (err) {
-            console.warn(`Skipping ${entry.name}:`, err);
+            const relativePath = [...parentFolders, entry.name].join('/');
+            console.warn(`Skipping ${relativePath}:`, err);
         }
-    }
+    });
+
     songs.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    console.log(`Found ${songs.length} song(s) in local folder.`);
     return songs;
 }
