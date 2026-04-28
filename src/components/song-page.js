@@ -6,7 +6,7 @@ import { isFavorite, addFavorite, removeFavorite } from '../services/favorites.j
 import { getSettings } from '../services/settings.js';
 import { getLocalSong } from '../services/local-song.js';
 import './song-renderer.js';
-
+import { globalStyles } from '../styles.js';
 function navigate(path) {
     history.pushState(null, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -203,7 +203,7 @@ export class SongPage extends LitElement {
         `;
     }
 
-    static styles = css`
+    static _styles = css`
         :host {
             display: block;
         }
@@ -304,6 +304,7 @@ export class SongPage extends LitElement {
             border: 1px solid var(--accent-border, rgba(170, 59, 255, 0.5));
         }
     `;
+    static styles = [globalStyles, this._styles];
 }
 
 customElements.define('song-page', SongPage);

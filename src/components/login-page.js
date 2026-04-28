@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { signInWithGoogle } from '../services/auth.js';
-
+import { globalStyles } from '../styles.js';
 function navigate(path) {
     history.pushState(null, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -51,7 +51,7 @@ export class LoginPage extends LitElement {
         `;
     }
 
-    static styles = css`
+    static _styles = css`
         :host {
             display: flex;
             align-items: center;
@@ -134,6 +134,7 @@ export class LoginPage extends LitElement {
             text-decoration: underline;
         }
     `;
+    static styles = [globalStyles, this._styles];
 }
 
 customElements.define('login-page', LoginPage);

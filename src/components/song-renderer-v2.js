@@ -128,7 +128,7 @@ span.chord {
 span::before {
   position: absolute;
   top: -1em;
-  color: red;
+  color: var(--accent, #aa3bff);
   font-size: 0.8em;
   content: attr(data-text);
 }

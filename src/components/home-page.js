@@ -6,6 +6,7 @@ import { getFavorites, isFavorite, addFavorite, removeFavorite } from '../servic
 import { subscribeToAuth, signOutUser } from '../services/auth.js';
 import { pickCrdFile, setLocalSong } from '../services/local-song.js';
 import { scanLocalFolder, getLocalFolderName } from '../services/local-folder.js';
+import { globalStyles } from '../styles.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -258,7 +259,7 @@ export class HomePage extends LitElement {
         `;
     }
 
-    static styles = css`
+    static styles = [globalStyles, css`
         :host {
             display: flex;
             flex-direction: column;
@@ -503,7 +504,7 @@ export class HomePage extends LitElement {
                 padding: 14px 16px;
             }
         }
-    `;
+    `];
 }
 
 customElements.define('home-page', HomePage);

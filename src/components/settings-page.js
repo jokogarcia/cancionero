@@ -7,7 +7,7 @@ import {
     getLocalFolderName,
     isLocalFolderSupported,
 } from '../services/local-folder.js';
-
+import { globalStyles } from '../styles.js';
 function navigate(path) {
     history.pushState(null, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -180,7 +180,7 @@ export class SettingsPage extends LitElement {
         `;
     }
 
-    static styles = css`
+    static _styles = css`
         :host {
             display: flex;
             flex-direction: column;
@@ -369,6 +369,8 @@ export class SettingsPage extends LitElement {
             }
         }
     `;
+    static styles = [globalStyles, this._styles];
 }
+
 
 customElements.define('settings-page', SettingsPage);

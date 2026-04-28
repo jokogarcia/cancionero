@@ -124,7 +124,7 @@ export class SongRenderer extends LitElement {
   }
   .chord-link {
     font-weight: bold;
-    color: blue;
+    color:  var(--accent, #aa3bff);
     text-decoration: none;
     }
   .song-content {

@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { getChordShapes } from '../services/chords.js';
 import { RenderShape } from './chord-renderer.js';
+import { globalStyles } from '../styles.js';
 
 export class ChordVisualizer extends LitElement {
   static properties = {
@@ -84,7 +85,7 @@ export class ChordVisualizer extends LitElement {
     `;
   }
 
-  static styles = css`
+  static _styles = css`
     :host {
       display: block;
     }
@@ -125,6 +126,7 @@ export class ChordVisualizer extends LitElement {
       opacity: 0.8;
     }
   `;
+  static styles=[globalStyles, this._styles];
 }
 
 customElements.define('chord-visualizer', ChordVisualizer);
