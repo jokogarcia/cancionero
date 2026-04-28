@@ -27,7 +27,7 @@ export function RenderShape(chordShape) {
    
    
     const svgContent=svg`<svg width="200" height="100" 
-      viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
+      viewBox="0 0 165 75" xmlns="http://www.w3.org/2000/svg">
   <style>
     svg {
       --chord-fg: black;
