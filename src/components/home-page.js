@@ -242,10 +242,16 @@ export class HomePage extends LitElement {
                         aria-label="Search songs"
                     />
                 </div>
-                <button class="nav-btn" @click=${this._openLocalFile} title="Open a .crd file from your device" aria-label="Open file">📂</button>
-                <button class="nav-btn" @click=${() => navigate('/settings')} title="Settings" aria-label="Settings">⚙</button>
+                <button class="nav-btn" @click=${this._openLocalFile} title="Open a .crd file from your device" aria-label="Open file">
+                    <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+                </button>
+                <button class="nav-btn" @click=${() => navigate('/settings')} title="Settings" aria-label="Settings">
+                    <i class="fa-solid fa-gear" aria-hidden="true"></i>
+                </button>
                 ${this._currentUser ? html`
-                    <button class="nav-btn" @click=${() => navigate('/add-song')} title="Add a song" aria-label="Add a song">+</button>
+                    <button class="nav-btn" @click=${() => navigate('/add-song')} title="Add a song" aria-label="Add a song">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                    </button>
                     <button class="nav-btn nav-avatar" @click=${this._signOut} title="Sign out" aria-label="Sign out">
                         ${this._currentUser.photoURL
                             ? html`<img class="avatar" src=${this._currentUser.photoURL} alt=${this._currentUser.displayName || 'User'} />`
@@ -253,13 +259,50 @@ export class HomePage extends LitElement {
                         }
                     </button>
                 ` : html`
-                    <button class="nav-btn" @click=${() => navigate('/login')} title="Sign in" aria-label="Sign in">👤</button>
+                    <button class="nav-btn" @click=${() => navigate('/login')} title="Sign in" aria-label="Sign in">
+                        <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+                    </button>
                 `}
             </nav>
         `;
     }
 
     static styles = [globalStyles, css`
+        /* Shadow DOM bridge for a small subset of Font Awesome icons used here */
+        .fa-solid {
+            display: inline-block;
+            width: 1.25em;
+            line-height: 1;
+            text-align: center;
+            font-family: 'Font Awesome 7 Free', 'Font Awesome 6 Free', 'Font Awesome 5 Free';
+            font-weight: 900;
+            font-style: normal;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .fa-solid::before {
+            display: inline-block;
+        }
+
+        .fa-folder-open::before {
+            content: '\\f07c';
+        }
+
+        .fa-gear::before,
+        .fa-cog::before {
+            content: '\\f013';
+        }
+
+        .fa-plus::before {
+            content: '\\2b';
+        }
+
+        .fa-right-to-bracket::before,
+        .fa-sign-in::before {
+            content: '\\f090';
+        }
+
         :host {
             display: flex;
             flex-direction: column;

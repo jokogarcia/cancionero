@@ -10,6 +10,7 @@
     "deploy": "vite build && rsync -avz --delete dist/ joaquin@irazu.com.ar:/www/coda"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.2.0",
     "firebase": "^11.6.0",
     "lit": "^3.3.2"
   },
