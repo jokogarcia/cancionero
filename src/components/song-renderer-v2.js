@@ -46,15 +46,17 @@ export class SongRendererV2 extends LitElement {
       let i = end;
       while (i < line.length && /\s/.test(line[i])) i++;
 
-      if (i < line.length) {
+      if (i < line.length && line[i] !== '[') {
         if (i > end) parts.push(line.slice(end, i));
 
         const nextChar = line[i];
-        parts.push(html`<span class="chord" data-text=${chord}>${nextChar}</span>`);
+        parts.push(html`<span class="chord" style= "min-width: ${chord.length+0.3}ch;" data-text=${chord}>${nextChar === ' ' ? '&nbsp;' : nextChar}</span>`);
         cursor = i + 1;
       } else {
-        parts.push(html`<span class="chord" data-text=${chord}> </span>`);
-        cursor = line.length;
+        // End of line, or next non-whitespace is another chord marker — use space placeholder
+        if (i > end) parts.push(line.slice(end, i));
+        parts.push(html`<span class="chord" style= "min-width: ${chord.length+0.3}ch;" data-text=${chord}>&nbsp;</span>`);
+        cursor = i;
       }
     }
 
@@ -126,6 +128,7 @@ span {
 
 span.chord {
   cursor: pointer;
+  display: inline-block;
 }
 
 span::before {
