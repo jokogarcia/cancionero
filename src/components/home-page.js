@@ -6,6 +6,7 @@ import { getFavorites, isFavorite, addFavorite, removeFavorite } from '../servic
 import { subscribeToAuth, signOutUser } from '../services/auth.js';
 import { pickCrdFile, setLocalSong } from '../services/local-song.js';
 import { scanLocalFolder, getLocalFolderName } from '../services/local-folder.js';
+import { queryLocalSongs } from '../services/local-songs-v2.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -17,10 +18,14 @@ export class HomePage extends LitElement {
         _query: { type: String, state: true },
         _favorites: { type: Array, state: true },
         _allSongs: { type: Array, state: true },
-        _localSongs: { type: Array, state: true },
         _localFolderName: { type: String, state: true },
         _loading: { type: Boolean, state: true },
         _currentUser: { type: Object, state: true },
+        _showProgress: { type: Boolean, state: true },
+        _scannedCount: { type: Number, state: true },
+        _foundCount: { type: Number, state: true },
+        _filteredLocalSongs: {type: Array, state: true },
+        _filteredSongs: { type: Array, state: true },
     };
 
     constructor() {
@@ -28,11 +33,15 @@ export class HomePage extends LitElement {
         this._query = '';
         this._favorites = getFavorites();
         this._allSongs = [];
-        this._localSongs = [];
         this._localFolderName = getLocalFolderName();
         this._loading = true;
         this._currentUser = null;
         this._unsubAuth = null;
+        this._progressTimeout = null;
+        this._scannedCount = 0;
+        this._foundCount = 0;
+        this._filteredLocalSongs = [];
+        this._filteredSongs = [];
     }
 
     connectedCallback() {
@@ -41,7 +50,6 @@ export class HomePage extends LitElement {
             this._currentUser = user;
         });
         this._loadSongs();
-        this._loadLocalSongs();
     }
 
     disconnectedCallback() {
@@ -53,28 +61,16 @@ export class HomePage extends LitElement {
         this._loading = true;
         try {
             this._allSongs = await findSong('', '', '', '', true);
+            this._filteredSongs = this._getFilteredSongs();
+            this._filteredLocalSongs = await this._getFilteredLocalSongs();
         } finally {
             this._loading = false;
         }
     }
 
-    async _loadLocalSongs() {
-        if (!this._localFolderName) return;
-        try {
-            this._localSongs = await scanLocalFolder();
-        } catch (err) {
-            console.warn('Local folder scan failed:', err);
-            this._localSongs = [];
-        }
-    }
+  
 
-    async _retryLocalScan() {
-        try {
-            this._localSongs = await scanLocalFolder({ requestPermission: true });
-        } catch (err) {
-            alert('Could not read folder: ' + err.message);
-        }
-    }
+    
 
     _openLocalSong(e, song) {
         e.stopPropagation();
@@ -82,8 +78,10 @@ export class HomePage extends LitElement {
         navigate('/open');
     }
 
-    _onSearch(e) {
+    async _onSearch(e) {
         this._query = e.target.value;
+        this._filteredSongs = this._getFilteredSongs();
+        this._filteredLocalSongs = await this._getFilteredLocalSongs();
     }
 
     _toggleFavorite(e, id) {
@@ -120,17 +118,10 @@ export class HomePage extends LitElement {
             song.content?.toLowerCase().includes(lower)
         );
     }
-
-    _getFilteredLocalSongs() {
+    async _getFilteredLocalSongs() {
         const q = this._query.trim();
-        if (!q) return this._localSongs;
-        const lower = q.toLowerCase();
-        return this._localSongs.filter(song =>
-            song.title?.toLowerCase().includes(lower) ||
-            song.artist?.toLowerCase().includes(lower) ||
-            song.author?.toLowerCase().includes(lower) ||
-            song.content?.toLowerCase().includes(lower)
-        );
+        const r = await queryLocalSongs(q);
+        return r;
     }
 
     _renderLocalSongItem(song) {
@@ -164,8 +155,7 @@ export class HomePage extends LitElement {
     }
 
     render() {
-        const filteredSongs = this._getFilteredSongs();
-        const filteredLocalSongs = this._getFilteredLocalSongs();
+        
         const isSearching = this._query.trim().length > 0;
         const favSongs = this._favorites
             .map(id => this._allSongs.find(s => s.id === id))
@@ -175,8 +165,8 @@ export class HomePage extends LitElement {
             : [];
         const showFavorites = favSongs.length > 0 && !isSearching;
         const showMySongs = mySongs.length > 0 && !isSearching;
-        const showLocal = this._localFolderName && (filteredLocalSongs.length > 0 || this._localSongs.length > 0);
-        const nonSpecialResults = filteredSongs.filter(s =>
+        const showLocal = this._localFolderName;
+        const nonSpecialResults = this._filteredSongs.filter(s =>
             !this._favorites.includes(s.id) &&
             !(showMySongs && s.uploaderId === this._currentUser?.uid)
         );
@@ -205,13 +195,13 @@ export class HomePage extends LitElement {
                     ${showLocal ? html`
                         <section>
                             <h2>📂 Local Files <span class="folder-name">(${this._localFolderName})</span></h2>
-                            ${this._localSongs.length === 0 ? html`
+                            ${this._filteredLocalSongs.length === 0 ? html`
                                 <p class="empty">
                                     No songs loaded. <button class="link-btn" @click=${this._retryLocalScan}>Grant access</button> to scan this folder.
                                 </p>
                             ` : html`
                                 <ul class="song-list">
-                                    ${filteredLocalSongs.map(s => this._renderLocalSongItem(s))}
+                                    ${this._filteredLocalSongs.map(s => this._renderLocalSongItem(s))}
                                 </ul>
                             `}
                         </section>
@@ -222,9 +212,9 @@ export class HomePage extends LitElement {
                             ? `Results for "${this._query.trim()}"`
                             : (showFavorites || showMySongs ? 'All Songs' : 'Songs')
                         }</h2>
-                        ${filteredSongs.length === 0 ? html`<p class="empty">No songs found.</p>` : html`
+                        ${this._filteredSongs.length === 0 ? html`<p class="empty">No songs found.</p>` : html`
                             <ul class="song-list">
-                                ${(isSearching ? filteredSongs : nonSpecialResults).map(s => this._renderSongItem(s))}
+                                ${(isSearching ? this._filteredSongs : nonSpecialResults).map(s => this._renderSongItem(s))}
                             </ul>
                         `}
                     </section>

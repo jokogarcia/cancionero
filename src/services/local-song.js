@@ -1,5 +1,4 @@
 /** @typedef {import('./songs.js').Song} Song */
-
 const LOCAL_SONG_KEY = 'cancionero_local_song';
 
 /**
@@ -54,6 +53,31 @@ export async function parseCrdFile(file) {
         isHiddenDMCA: false,
         uploaderId: null,
     };
+}
+
+/**
+ * Processes a plain text file with OLGA file conventions
+ * @param {String} path,
+ * @returns {Song | null}
+ */
+export function parseOlgaFile(filePath){
+    if (!/crd|tab/.test(basename(filePath))) return null;
+    const artist = underscoreToSpace(containingDirectory(filePath));
+    const {title, type} = extractOlgaTitleAndType(filePath);
+    if (type != 'crd') return null;
+    
+    /** @type {Song} */
+    const result={
+        id:`olga-${filePath}`,
+        artist,
+        title,
+        _isLocal:true,
+        path:filePath,
+        year:0
+        
+
+    }
+    return result;
 }
 
 /**
@@ -132,4 +156,54 @@ export function pickCrdFile() {
         document.body.appendChild(input);
         input.click();
     });
+}
+
+
+function underscoreToSpace(str) {    return str.replace(/_/g, ' ');}
+
+function containingDirectory(filePath) {
+    const a = dirname(filePath).split("/");
+    return a.slice(-1)[0];
+}
+
+function normalizePath(p) {
+    return String(p || '').replace(/\\/g, '/');
+}
+
+function basename(filePath) {
+    const normalized = normalizePath(filePath);
+    const i = normalized.lastIndexOf('/');
+    return i >= 0 ? normalized.slice(i + 1) : normalized;
+}
+
+function dirname(filePath) {
+    const normalized = normalizePath(filePath);
+    const i = normalized.lastIndexOf('/');
+    return i >= 0 ? normalized.slice(0, i) : '';
+}
+
+function relativeFromRoot(rootPath, targetPath) {
+    const root = normalizePath(rootPath).replace(/\/+$/, '');
+    const target = normalizePath(targetPath);
+    if (!root) return target;
+    if (target === root) return '';
+    if (target.startsWith(root + '/')) return target.slice(root.length + 1);
+    return target;
+}
+/**
+ * Extracts the file name, converts underscores to spaces, removes 
+ * .crd and .txt extensions and crd, tab and ver* suffixes
+ * @param {string} filePath 
+ * @return {{title:string,type:string}} the extracted title and type
+ */
+function extractOlgaTitleAndType(filePath) {
+    const fileName = basename(filePath);
+    const nameWithoutExtension = fileName.replace(/\.(crd|txt)$/, '');
+    const nameWithoutSuffixes = nameWithoutExtension.replace(/(?:_?(?:ver\d+|btab|tab|crd))+$/i, '');
+    const nameWithoutUnderscores = underscoreToSpace(nameWithoutSuffixes);
+    const nameWithoutDoubleSpaces = nameWithoutUnderscores.replace(/\s+/g, ' ').trim();
+    const name = nameWithoutDoubleSpaces;
+    const typeMatch = fileName.match(/(crd|tab|btab)/i);
+    const type = typeMatch ? typeMatch[1] : 'unknown';
+    return {title: name, type};
 }

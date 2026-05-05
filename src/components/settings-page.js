@@ -2,22 +2,37 @@ import { LitElement, html, css } from 'lit';
 import { getSettings, updateSettings, resetSettings, applyTheme, applyFontSize } from '../services/settings.js';
 import { getFavorites } from '../services/favorites.js';
 import {
-    pickLocalFolder,
     clearLocalFolder,
     getLocalFolderName,
     isLocalFolderSupported,
 } from '../services/local-folder.js';
-
+import './scan-progress-indicator.js';
+import { startFolderScan } from '../services/local-songs-v2.js';
 function navigate(path) {
     history.pushState(null, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
 }
-
+async function pickLocalFolder() {
+    if (!isLocalFolderSupported()) {
+        throw new Error('Your browser does not support selecting a local folder');
+    }
+    
+    try {
+        const handle = await window.showDirectoryPicker({ id: 'cancionero-songs', mode: 'read' });
+        return handle;
+    } catch (err) {
+        if (err && err.name === 'AbortError') return null;
+        throw err;
+    }
+}
 export class SettingsPage extends LitElement {
     static properties = {
         _settings: { type: Object, state: true },
         _favCount: { type: Number, state: true },
         _folderName: { type: String, state: true },
+        _isScanning: { type: Boolean, state: true },
+        _scannedFilesCount: { type: Number, state: true },
+        _foundSongsCount: { type: Number, state: true },
     };
 
     constructor() {
@@ -64,7 +79,22 @@ export class SettingsPage extends LitElement {
     async _pickFolder() {
         try {
             const result = await pickLocalFolder();
-            if (result) this._folderName = result.name;
+            if (result) {
+                this._folderName = result.name;
+                this._isScanning = true;
+                // The actual scan will be triggered by the home page when it detects the folder name change, so we just need to wait for that to finish
+                const onScanProgress = (e) => {
+                    if (e.detail.finished) {
+                        this._isScanning = false;
+                        window.removeEventListener('local-folder-scan-progress', onScanProgress);
+                    }
+                    this._scannedFilesCount = e.detail.processed;
+                    this._foundSongsCount = e.detail.found;
+                };
+                window.addEventListener('local-folder-scan-progress', onScanProgress);
+                startFolderScan(result);
+                
+            }
         } catch (err) {
             alert('Could not select folder: ' + err.message);
         }
@@ -177,6 +207,12 @@ export class SettingsPage extends LitElement {
                     </div>
                 </section>
             </main>
+            ${this._isScanning ? html`
+            <scan-progress-indicator
+                .processed=${this._scannedFilesCount}
+                .found=${this._foundSongsCount}
+            ></scan-progress-indicator>
+            ` : ''}
         `;
     }
 

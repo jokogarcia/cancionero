@@ -1,7 +1,6 @@
 /** @typedef {import('./songs.js').Song} Song */
 
-import { parseCrdFile } from './local-song.js';
-
+import { parseCrdFile, parseOlgaFile } from './local-song.js';
 const DB_NAME = 'cancionero-local';
 const STORE = 'handles';
 const HANDLE_KEY = 'songsFolder';
@@ -138,21 +137,13 @@ async function detectOlgaArchive(rootHandle) {
     return true;
 }
 
-async function scanDirectoryRecursive(directoryHandle, parentFolders, visitFile) {
-    for await (const entry of directoryHandle.values()) {
-        if (entry.kind === 'directory') {
-            await scanDirectoryRecursive(entry, [...parentFolders, entry.name], visitFile);
-            continue;
-        }
-        if (entry.kind === 'file') {
-            await visitFile(entry, parentFolders);
-        }
-    }
-}
+
 
 /**
  * Scan the stored folder recursively and return parsed songs from every .crd/.txt file.
- * @param {{ requestPermission?: boolean }} [opts]
+ * @param {{ 
+ * requestPermission?: boolean,
+*  }} [opts]
  * @returns {Promise<Song[]>}
  */
 export async function scanLocalFolder({ requestPermission = false } = {}) {
@@ -165,23 +156,50 @@ export async function scanLocalFolder({ requestPermission = false } = {}) {
     const songs = [];
     const isOlga = await detectOlgaArchive(handle);
     console.log("Scanning local folder",handle ," (Olga archive detected:", isOlga, ")...");
-    await scanDirectoryRecursive(handle, [], async (entry, parentFolders) => {
-        if (!/\.(crd|txt)$/i.test(entry.name)) return;
+    let n =0;
+    const fileprocessor = async (entry, parentFolders) => {
+        if (!/(crd|tab|btab)/i.test(entry.name)) return;
         try {
             const file = await entry.getFile();
-            const song = await parseCrdFile(file);
-            const localSong = { ...song };
-            if (isOlga && parentFolders.length > 0) {
-                localSong.artist = parentFolders[parentFolders.length - 1];
+            const song = isOlga ? parseOlgaFile([...parentFolders, entry.name].join('/')) : await parseCrdFile(file);
+            n++;
+            if(n%117===0){
+                window.dispatchEvent(new CustomEvent('local-folder-scan-progress', { detail: { processed: n, found: songs.length } }));
             }
-            songs.push({ ...localSong, _local: true });
+            if(song){
+                songs.push(song)
+            }
         } catch (err) {
             const relativePath = [...parentFolders, entry.name].join('/');
             console.warn(`Skipping ${relativePath}:`, err);
         }
-    });
+    };
+    await scanDirectoryRecursive(handle, [], fileprocessor);
 
     songs.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     console.log(`Found ${songs.length} song(s) in local folder.`);
     return songs;
 }
+
+/**
+ * Read the text content of a file at a relative path within the stored folder handle.
+ * @param {string} relativePath - e.g. "guitar/tabs/a/somesong.crd"
+ * @returns {Promise<string>}
+ */
+export async function getLocalFolderFile(relativePath) {
+    const handle = await idbGet(HANDLE_KEY);
+    if (!handle) throw new Error('No local folder selected');
+    const ok = await ensurePermission(handle, false);
+    if (!ok) throw new Error('Permission denied for local folder');
+
+    const parts = relativePath.split('/').filter(Boolean);
+    const fileName = parts.pop();
+    let current = handle;
+    for (const part of parts) {
+        current = await current.getDirectoryHandle(part);
+    }
+    const fileHandle = await current.getFileHandle(fileName);
+    const file = await fileHandle.getFile();
+    return file.text();
+}
+

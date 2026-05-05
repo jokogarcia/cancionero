@@ -41,6 +41,8 @@ const songsCol = collection(db, 'songs');
  * @property {boolean} isPublic
  * @property {boolean} isHiddenDMCA
  * @property {string} content
+ * @property {boolean} _isLocal
+ * @property {string} path
  */
 
 /**
@@ -70,7 +72,7 @@ export async function findSong(title, artist, author, lyric, andOr) {
         } else {
             return matchesTitle || matchesArtist || matchesAuthor || matchesLyric;
         }
-    });
+    }).slice(0, 15);
 }
 
 /**
