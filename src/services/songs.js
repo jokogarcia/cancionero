@@ -127,12 +127,17 @@ export function convertV1ToV2(song) {
                 lines.push(line)
                 continue; // leave blank lines untouched
             }
+            if(line.trim().slice(0,6).includes('|-') || line.trim().slice(-6).includes('-|')){
+                lines.push(`<pre>${line}</pre>`)
+                continue; // likely tablature, skip chord parsing
+            }
             if(state=="finding-chords"){
                 found_chords=findChordsInLine(line);
                 if(found_chords.length>0){
                     state="placing-chords"
                     continue;
                 }else{
+                    lines.push(line)
                     continue;
                 }
             }else if (state == "placing-chords"){

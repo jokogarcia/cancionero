@@ -25,7 +25,9 @@ export class SongRendererV2 extends LitElement {
   static processSongLine(line){
     const parts = [];
     let cursor = 0;
-
+    if(line.startsWith('<pre>') && line.endsWith('</pre>')){
+        return html`<pre>${line.slice(5,-6)}</pre>`;
+     }
     while (cursor < line.length) {
       const next = line.slice(cursor).match(/\[([^\]]+)\]/);
       if (!next) {
@@ -56,7 +58,7 @@ export class SongRendererV2 extends LitElement {
       }
     }
 
-    return html`${parts}`;
+    return html`<p>${parts}</p>`;
   }
   addChordClickListeners(){
     const chordElements = this.shadowRoot.querySelectorAll('span.chord');
@@ -95,13 +97,14 @@ export class SongRendererV2 extends LitElement {
   render() {
     /**@type {Song} */
     const song = this.content.version === 1 ? convertV1ToV2(this.content) : this.content;
+    debugger;
     return html`
       <h1>${song.title}</h1>
         ${song.artist ? html`<h2>${song.artist}</h2>` : ''}
         ${song.album ? html`<h3>${song.album} (${song.year})</h3>` : ''}
         ${song.author ? html`<h4>Written by ${song.author}</h4>` : ''}
         <div>
-          ${song.content.split('\n').map(line => html`<p>${SongRendererV2.processSongLine(line)}</p>`)}
+          ${song.content.replace(/\r\n/g, '\n').split('\n').map(line => html`${SongRendererV2.processSongLine(line)}`)}
         </div>
         ${this._renderModal()}
     `;
@@ -164,6 +167,15 @@ span::before {
       background: #1e1e1e;
       color: white;
     }
+  }
+  pre{
+    font-family: 'Courier New', Courier, monospace;
+    white-space: pre;
+    text-align: left;
+    font-size: calc(0.75rem * var(--song-font-scale, 1));
+    margin: 0;
+    line-height:normal;
+
   }
 `;
 }
