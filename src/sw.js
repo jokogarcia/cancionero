@@ -1,6 +1,5 @@
 /// <reference lib="webworker" />
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
-
 const CHORDS_DB_NAME = 'coda-db';
 const CHORDS_STORE_NAME = 'app-cache';
 const CHORDS_CACHE_KEY = 'chords';
@@ -19,6 +18,7 @@ self.addEventListener('install', () => {
 });
 
 self.addEventListener('activate', event => {
+  initializeSQLite();
   event.waitUntil((async () => {
     await self.clients.claim();
 
@@ -151,3 +151,4 @@ async function writeChordsToIndexedDB(chords) {
     tx.onabort = () => reject(tx.error || new Error('Failed to write chords to IndexedDB'));
   });
 }
+

@@ -1,15 +1,18 @@
 /** @typedef {import('../services/songs.js').Song} Song */
 
 import { LitElement, html, css } from 'lit';
+import { getLocalFolderFile } from '../services/local-folder.js';
 import "./song-renderer-v2.js";
 import './chord-visualizer.js';
 import { getAllChordNames } from '../services/chords.js';
+import { convertV1ToV2 } from '../services/songs.js';
 export class SongRenderer extends LitElement {
     
   static properties = {
     content: { type: Object },
     _modalChord: { type: String, state: true },
     _chordsReady: { type: Boolean, state: true },
+    _fileContent: { type: String, state: true },
   };
   static allChordNames = null;
 
@@ -17,6 +20,8 @@ export class SongRenderer extends LitElement {
     super();
     this._modalChord = null;
     this._chordsReady = false;
+    this._fileContent = null;
+    this._loadingPath = null;
   }
 
   async connectedCallback() {
@@ -83,9 +88,31 @@ export class SongRenderer extends LitElement {
     `;
   }
 
+  willUpdate(changedProps) {
+    if (changedProps.has('content') && this.content?.path && this.content.path !== this._loadingPath) {
+      this._loadingPath = this.content.path;
+      this._fileContent = null;
+      getLocalFolderFile(this.content.path).then(text => {
+        if (this._loadingPath === this.content?.path) {
+          this._fileContent = text;
+        }
+      }).catch(err => {
+        console.error('Failed to load local file:', err);
+        this._fileContent = '';
+      });
+    }
+  }
+
   render() {
+    if(this.content.path){
+      if (this._fileContent === null) return html`<p>Loading…</p>`;
+      const songWithContent = { ...this.content, version: 1, content: this._fileContent };
+      const song = convertV1ToV2(songWithContent);
+      return html`<song-renderer-v2 .content=${song}></song-renderer-v2>`;
+    }
     /**@type {Song} */
-    const song = this.content;
+    const song = this.content.version === 1 ? convertV1ToV2(this.content) : this.content;
+  
     if(song.version == 2){
       return html`<song-renderer-v2 .content=${song}></song-renderer-v2>`;
     }
@@ -106,6 +133,7 @@ export class SongRenderer extends LitElement {
     `;
     }
     else{
+      
       return html`<p>Unsupported song version: ${song.version}</p>`;
     }
   }
@@ -129,7 +157,7 @@ export class SongRenderer extends LitElement {
     font-family: 'Courier New', Courier, monospace;
     white-space: pre;
     text-align: left;
-    font-size: x-small;
+    font-size: calc(0.75rem * var(--song-font-scale, 1));
    }
   dialog {
     border: none;
