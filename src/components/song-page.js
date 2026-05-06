@@ -5,6 +5,7 @@ import { getSongById } from '../services/songs.js';
 import { isFavorite, addFavorite, removeFavorite } from '../services/favorites.js';
 import { getSettings } from '../services/settings.js';
 import { getLocalSong } from '../services/local-song.js';
+import { acquireWakeLock, releaseWakeLock } from '../services/screen-wake-lock.js';
 import './song-renderer.js';
 
 function navigate(path) {
@@ -38,17 +39,21 @@ export class SongPage extends LitElement {
     connectedCallback() {
         super.connectedCallback();
         this._loadSong();
+        void acquireWakeLock();
     }
 
     disconnectedCallback() {
         this._stopScroll();
+        releaseWakeLock();
         super.disconnectedCallback();
     }
 
     updated(changedProps) {
         if (changedProps.has('songId') || changedProps.has('source')) {
             this._stopScroll();
+            releaseWakeLock();
             this._loadSong();
+            void acquireWakeLock();
         }
     }
 
