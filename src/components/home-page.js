@@ -239,7 +239,7 @@ export class HomePage extends LocalizeMixin(LitElement) {
                     <button class="nav-btn" @click=${() => navigate('/add-song')} title=${t('home.addSongLabel')} aria-label=${t('home.addSongLabel')}>+</button>
                     <button class="nav-btn nav-avatar" @click=${this._signOut} title=${t('home.signOutLabel')} aria-label=${t('home.signOutLabel')}>
                         ${this._currentUser.photoURL
-                            ? html`<img class="avatar" src=${this._currentUser.photoURL} alt=${this._currentUser.displayName || t('home.signOutLabel')} />`
+                            ? html`<img class="avatar" src=${this._currentUser.photoURL} alt=${this._currentUser.displayName || t('home.userAvatar')} />`
                             : html`<span class="avatar-placeholder">${(this._currentUser.displayName || this._currentUser.email || '?')[0].toUpperCase()}</span>`
                         }
                     </button>

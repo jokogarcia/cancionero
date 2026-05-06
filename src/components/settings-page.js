@@ -191,7 +191,7 @@ export class SettingsPage extends LocalizeMixin(LitElement) {
                                 ${!isLocalFolderSupported()
                                     ? t('settings.notSupported')
                                     : this._folderName
-                                        ? html`${t('settings.scanningFolder', { name: '\x01' }).split('\x01')[0]}<code>${this._folderName}</code>${t('settings.scanningFolder', { name: '\x01' }).split('\x01')[1]}`
+                                        ? html`${t('settings.scanningFolderPrefix')}<code>${this._folderName}</code>${t('settings.scanningFolderSuffix')}`
                                         : t('settings.selectFolderHint')}
                             </span>
                         </span>
