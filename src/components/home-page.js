@@ -7,13 +7,14 @@ import { subscribeToAuth, signOutUser } from '../services/auth.js';
 import { pickCrdFile, setLocalSong } from '../services/local-song.js';
 import { scanLocalFolder, getLocalFolderName } from '../services/local-folder.js';
 import { queryLocalSongs } from '../services/local-songs-v2.js';
+import { t, LocalizeMixin } from '../services/i18n.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-export class HomePage extends LitElement {
+export class HomePage extends LocalizeMixin(LitElement) {
     static properties = {
         _query: { type: String, state: true },
         _favorites: { type: Array, state: true },
@@ -129,15 +130,16 @@ export class HomePage extends LitElement {
             <li class="song-item" @click=${(e) => this._openLocalSong(e, song)}>
                 <span class="song-info">
                     <span class="song-title">${song.title}</span>
-                    <span class="song-artist">${song.artist || 'Local file'}</span>
+                    <span class="song-artist">${song.artist || t('home.localFile')}</span>
                 </span>
-                <span class="local-tag">Local</span>
+                <span class="local-tag">${t('song.local')}</span>
             </li>
         `;
     }
 
     _renderSongItem(song) {
         const fav = this._favorites.includes(song.id);
+        const favLabel = fav ? t('song.removeFavorite') : t('song.addFavorite');
         return html`
             <li class="song-item" @click=${() => navigate(`/song/${song.id}`)}>
                 <span class="song-info">
@@ -146,8 +148,8 @@ export class HomePage extends LitElement {
                 </span>
                 <button
                     class="fav-btn ${fav ? 'is-fav' : ''}"
-                    aria-label="${fav ? 'Remove from favorites' : 'Add to favorites'}"
-                    title="${fav ? 'Remove from favorites' : 'Add to favorites'}"
+                    aria-label="${favLabel}"
+                    title="${favLabel}"
                     @click=${(e) => this._toggleFavorite(e, song.id)}
                 >${fav ? '★' : '☆'}</button>
             </li>
@@ -173,10 +175,10 @@ export class HomePage extends LitElement {
 
         return html`
             <main>
-                ${this._loading ? html`<p class="loading">Loading songs…</p>` : html`
+                ${this._loading ? html`<p class="loading">${t('home.loading')}</p>` : html`
                     ${showMySongs ? html`
                         <section>
-                            <h2>🎸 My Songs</h2>
+                            <h2>🎸 ${t('home.mySongs')}</h2>
                             <ul class="song-list">
                                 ${mySongs.map(s => this._renderSongItem(s))}
                             </ul>
@@ -185,7 +187,7 @@ export class HomePage extends LitElement {
 
                     ${showFavorites ? html`
                         <section>
-                            <h2>⭐ Favorites</h2>
+                            <h2>⭐ ${t('home.favorites')}</h2>
                             <ul class="song-list">
                                 ${favSongs.map(s => this._renderSongItem(s))}
                             </ul>
@@ -194,10 +196,10 @@ export class HomePage extends LitElement {
 
                     ${showLocal ? html`
                         <section>
-                            <h2>📂 Local Files <span class="folder-name">(${this._localFolderName})</span></h2>
+                            <h2>📂 ${t('home.localFiles')} <span class="folder-name">(${this._localFolderName})</span></h2>
                             ${this._filteredLocalSongs.length === 0 ? html`
                                 <p class="empty">
-                                    No songs loaded. <button class="link-btn" @click=${this._retryLocalScan}>Grant access</button> to scan this folder.
+                                    ${t('home.noSongsLoaded')} <button class="link-btn" @click=${this._retryLocalScan}>${t('home.grantAccess')}</button>
                                 </p>
                             ` : html`
                                 <ul class="song-list">
@@ -209,10 +211,10 @@ export class HomePage extends LitElement {
 
                     <section>
                         <h2>${isSearching
-                            ? `Results for "${this._query.trim()}"`
-                            : (showFavorites || showMySongs ? 'All Songs' : 'Songs')
+                            ? t('home.results', { query: this._query.trim() })
+                            : (showFavorites || showMySongs ? t('home.allSongs') : t('home.songs'))
                         }</h2>
-                        ${this._filteredSongs.length === 0 ? html`<p class="empty">No songs found.</p>` : html`
+                        ${this._filteredSongs.length === 0 ? html`<p class="empty">${t('home.noSongsFound')}</p>` : html`
                             <ul class="song-list">
                                 ${(isSearching ? this._filteredSongs : nonSpecialResults).map(s => this._renderSongItem(s))}
                             </ul>
@@ -225,24 +227,24 @@ export class HomePage extends LitElement {
                 <div class="search-wrapper">
                     <input
                         type="search"
-                        placeholder="Search…"
+                        placeholder=${t('home.search')}
                         .value=${this._query}
                         @input=${this._onSearch}
-                        aria-label="Search songs"
+                        aria-label=${t('home.search')}
                     />
                 </div>
-                <button class="nav-btn" @click=${this._openLocalFile} title="Open a .crd file from your device" aria-label="Open file">📂</button>
-                <button class="nav-btn" @click=${() => navigate('/settings')} title="Settings" aria-label="Settings">⚙</button>
+                <button class="nav-btn" @click=${this._openLocalFile} title=${t('home.openFileTitle')} aria-label=${t('home.openFileLabel')}>📂</button>
+                <button class="nav-btn" @click=${() => navigate('/settings')} title=${t('home.settingsLabel')} aria-label=${t('home.settingsLabel')}>⚙</button>
                 ${this._currentUser ? html`
-                    <button class="nav-btn" @click=${() => navigate('/add-song')} title="Add a song" aria-label="Add a song">+</button>
-                    <button class="nav-btn nav-avatar" @click=${this._signOut} title="Sign out" aria-label="Sign out">
+                    <button class="nav-btn" @click=${() => navigate('/add-song')} title=${t('home.addSongLabel')} aria-label=${t('home.addSongLabel')}>+</button>
+                    <button class="nav-btn nav-avatar" @click=${this._signOut} title=${t('home.signOutLabel')} aria-label=${t('home.signOutLabel')}>
                         ${this._currentUser.photoURL
-                            ? html`<img class="avatar" src=${this._currentUser.photoURL} alt=${this._currentUser.displayName || 'User'} />`
+                            ? html`<img class="avatar" src=${this._currentUser.photoURL} alt=${this._currentUser.displayName || t('home.signOutLabel')} />`
                             : html`<span class="avatar-placeholder">${(this._currentUser.displayName || this._currentUser.email || '?')[0].toUpperCase()}</span>`
                         }
                     </button>
                 ` : html`
-                    <button class="nav-btn" @click=${() => navigate('/login')} title="Sign in" aria-label="Sign in">👤</button>
+                    <button class="nav-btn" @click=${() => navigate('/login')} title=${t('home.signInLabel')} aria-label=${t('home.signInLabel')}>👤</button>
                 `}
             </nav>
         `;

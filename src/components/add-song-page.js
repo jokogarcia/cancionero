@@ -1,13 +1,14 @@
 import { LitElement, html, css } from 'lit';
 import { insertSong } from '../services/songs.js';
 import { subscribeToAuth } from '../services/auth.js';
+import { t, LocalizeMixin } from '../services/i18n.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-export class AddSongPage extends LitElement {
+export class AddSongPage extends LocalizeMixin(LitElement) {
     static properties = {
         _errors: { type: Object, state: true },
         _saving: { type: Boolean, state: true },
@@ -42,8 +43,8 @@ export class AddSongPage extends LitElement {
 
     _validate(data) {
         const errors = {};
-        if (!data.title.trim()) errors.title = 'Title is required.';
-        if (!data.content.trim()) errors.content = 'Content is required.';
+        if (!data.title.trim()) errors.title = t('addSong.titleRequired');
+        if (!data.content.trim()) errors.content = t('addSong.contentRequired');
         return errors;
     }
 
@@ -77,7 +78,7 @@ export class AddSongPage extends LitElement {
             const newSong = await insertSong(data);
             navigate(`/song/${newSong.id}`);
         } catch (err) {
-            this._errors = { _general: 'Failed to save song. Please try again.' };
+            this._errors = { _general: t('addSong.failedSave') };
         } finally {
             this._saving = false;
         }
@@ -85,56 +86,56 @@ export class AddSongPage extends LitElement {
 
     render() {
         if (!this._authInitialized) {
-            return html`<p class="loading">Loading…</p>`;
+            return html`<p class="loading">${t('addSong.loading')}</p>`;
         }
         return html`
             <div class="toolbar">
-                <button class="back-btn" @click=${() => navigate('/')}>← Back</button>
+                <button class="back-btn" @click=${() => navigate('/')}>${t('addSong.back')}</button>
             </div>
             <main>
-                <h1>Add a Song</h1>
+                <h1>${t('addSong.title')}</h1>
                 ${this._errors._general ? html`<p class="error-banner">${this._errors._general}</p>` : ''}
                 <form @submit=${this._onSubmit} novalidate>
                     <div class="field ${this._errors.title ? 'has-error' : ''}">
-                        <label for="title">Title <span class="required" aria-hidden="true">*</span></label>
+                        <label for="title">${t('addSong.titleLabel')} <span class="required" aria-hidden="true">*</span></label>
                         <input id="title" name="title" type="text" autocomplete="off" />
                         ${this._errors.title ? html`<span class="error-msg">${this._errors.title}</span>` : ''}
                     </div>
 
                     <div class="field">
-                        <label for="author">Author(s)</label>
+                        <label for="author">${t('addSong.authorLabel')}</label>
                         <input id="author" name="author" type="text" autocomplete="off" />
                     </div>
 
                     <div class="field">
-                        <label for="artist">Artist</label>
+                        <label for="artist">${t('addSong.artistLabel')}</label>
                         <input id="artist" name="artist" type="text" autocomplete="off" />
                     </div>
 
                     <div class="field">
-                        <label for="year">Year</label>
+                        <label for="year">${t('addSong.yearLabel')}</label>
                         <input id="year" name="year" type="number" min="1" max="9999" autocomplete="off" />
                     </div>
 
                     <div class="field">
-                        <label for="album">Album</label>
+                        <label for="album">${t('addSong.albumLabel')}</label>
                         <input id="album" name="album" type="text" autocomplete="off" />
                     </div>
 
                     <div class="field">
-                        <label for="key">Key</label>
+                        <label for="key">${t('addSong.keyLabel')}</label>
                         <input id="key" name="key" type="text" autocomplete="off" />
                     </div>
 
                     <div class="field ${this._errors.content ? 'has-error' : ''}">
-                        <label for="content">Content <span class="required" aria-hidden="true">*</span></label>
+                        <label for="content">${t('addSong.contentLabel')} <span class="required" aria-hidden="true">*</span></label>
                         <textarea id="content" name="content" rows="10"></textarea>
                         ${this._errors.content ? html`<span class="error-msg">${this._errors.content}</span>` : ''}
                     </div>
 
                     <div class="actions">
                         <button type="submit" class="submit-btn" ?disabled=${this._saving}>
-                            ${this._saving ? 'Saving…' : 'Save Song'}
+                            ${this._saving ? t('addSong.saving') : t('addSong.save')}
                         </button>
                     </div>
                 </form>

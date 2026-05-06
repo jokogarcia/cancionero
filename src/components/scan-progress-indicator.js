@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
+import { t, LocalizeMixin } from '../services/i18n.js';
 
-export class ScanProgressIndicator extends LitElement {
+export class ScanProgressIndicator extends LocalizeMixin(LitElement) {
     static properties = {
         processed: { type: Number },
         found: { type: Number },
@@ -33,7 +34,7 @@ export class ScanProgressIndicator extends LitElement {
 
     render() {
         return html`
-            <span>Scanning... ${this.processed} processed, ${this.found} found</span>
+            <span>${t('scan.progress', { processed: this.processed, found: this.found })}</span>
         `;
     }
 }

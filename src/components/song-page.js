@@ -7,13 +7,14 @@ import { getSettings } from '../services/settings.js';
 import { getLocalSong } from '../services/local-song.js';
 import { acquireWakeLock, releaseWakeLock } from '../services/screen-wake-lock.js';
 import './song-renderer.js';
+import { t, LocalizeMixin } from '../services/i18n.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-export class SongPage extends LitElement {
+export class SongPage extends LocalizeMixin(LitElement) {
     static properties = {
         songId: { type: String },
         source: { type: String },
@@ -150,27 +151,27 @@ export class SongPage extends LitElement {
     render() {
         if (this._loading) {
             return html`
-                <p class="loading">Loading…</p>
+                <p class="loading">${t('song.loading')}</p>
                 <div class="toolbar">
-                    <button class="back-btn" title="Back" aria-label="Back" @click=${() => navigate('/')}>←</button>
+                    <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}>←</button>
                 </div>
             `;
         }
         if (!this._song) {
             return html`
-                <p class="not-found">Song not found.</p>
+                <p class="not-found">${t('song.notFound')}</p>
                 <div class="toolbar">
-                    <button class="back-btn" title="Back" aria-label="Back" @click=${() => navigate('/')}>←</button>
+                    <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}>←</button>
                 </div>
             `;
         }
-        const favLabel = this._favorite ? 'Remove from favorites' : 'Add to favorites';
-        const playLabel = this._playing ? 'Pause auto-scroll' : 'Play auto-scroll';
+        const favLabel = this._favorite ? t('song.removeFavorite') : t('song.addFavorite');
+        const playLabel = this._playing ? t('song.pauseScroll') : t('song.playScroll');
         const isLocal = this.source === 'local';
         return html`
             <song-renderer .content=${this._song}></song-renderer>
             <div class="toolbar">
-                <button class="back-btn" title="Back" aria-label="Back" @click=${() => navigate('/')}>←</button>
+                <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}>←</button>
                 <button
                     class="play-btn ${this._playing ? 'is-playing' : ''}"
                     title=${playLabel}
@@ -180,7 +181,7 @@ export class SongPage extends LitElement {
                 >
                     ${this._playing ? '⏸' : '▶'}
                 </button>
-                <label class="rate" title="Scroll rate (lines per second)">
+                <label class="rate" title=${t('song.scrollRateTitle')}>
                     <input
                         class="rate-input"
                         type="number"
@@ -188,12 +189,12 @@ export class SongPage extends LitElement {
                         max="0.01"
                         step="0.001"
                         .value=${String(this._rate)}
-                        aria-label="Scroll rate in lines per second"
+                        aria-label=${t('song.scrollRateLabel')}
                         @input=${this._onRateChange}
                     />
-                    <span class="rate-unit">lps</span>
+                    <span class="rate-unit">${t('song.lps')}</span>
                 </label>
-                ${isLocal ? html`<span class="local-badge" title="Loaded from a local .crd file">Local</span>` : html`
+                ${isLocal ? html`<span class="local-badge" title=${t('song.localBadgeTitle')}>${t('song.local')}</span>` : html`
                     <button
                         class="fav-btn ${this._favorite ? 'is-fav' : ''}"
                         title=${favLabel}
