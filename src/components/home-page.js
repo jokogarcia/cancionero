@@ -8,6 +8,9 @@ import { pickCrdFile, setLocalSong } from '../services/local-song.js';
 import { scanLocalFolder, getLocalFolderName } from '../services/local-folder.js';
 import { queryLocalSongs } from '../services/local-songs-v2.js';
 import { t, LocalizeMixin } from '../services/i18n.js';
+import './app-icon.js';
+
+const HOME_SECTIONS_STORAGE_KEY = 'coda_home_sections';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -27,6 +30,8 @@ export class HomePage extends LocalizeMixin(LitElement) {
         _foundCount: { type: Number, state: true },
         _filteredLocalSongs: {type: Array, state: true },
         _filteredSongs: { type: Array, state: true },
+        _localLimit: { type: Number, state: true },
+        _hasMoreLocal: { type: Boolean, state: true },
     };
 
     constructor() {
@@ -43,6 +48,9 @@ export class HomePage extends LocalizeMixin(LitElement) {
         this._foundCount = 0;
         this._filteredLocalSongs = [];
         this._filteredSongs = [];
+        this._localLimit = 15;
+        this._hasMoreLocal = false;
+        this._sectionState = this._readSectionState();
     }
 
     connectedCallback() {
@@ -63,6 +71,7 @@ export class HomePage extends LocalizeMixin(LitElement) {
         try {
             this._allSongs = await findSong('', '', '', '', true);
             this._filteredSongs = this._getFilteredSongs();
+            this._localLimit = 15;
             this._filteredLocalSongs = await this._getFilteredLocalSongs();
         } finally {
             this._loading = false;
@@ -82,6 +91,12 @@ export class HomePage extends LocalizeMixin(LitElement) {
     async _onSearch(e) {
         this._query = e.target.value;
         this._filteredSongs = this._getFilteredSongs();
+        this._localLimit = 15;
+        this._filteredLocalSongs = await this._getFilteredLocalSongs();
+    }
+
+    async _loadMoreLocalSongs() {
+        this._localLimit += 15;
         this._filteredLocalSongs = await this._getFilteredLocalSongs();
     }
 
@@ -121,8 +136,9 @@ export class HomePage extends LocalizeMixin(LitElement) {
     }
     async _getFilteredLocalSongs() {
         const q = this._query.trim();
-        const r = await queryLocalSongs(q);
-        return r;
+        const r = await queryLocalSongs(q, 0, this._localLimit + 1);
+        this._hasMoreLocal = r.length > this._localLimit;
+        return this._hasMoreLocal ? r.slice(0, this._localLimit) : r;
     }
 
     _renderLocalSongItem(song) {
@@ -151,8 +167,44 @@ export class HomePage extends LocalizeMixin(LitElement) {
                     aria-label="${favLabel}"
                     title="${favLabel}"
                     @click=${(e) => this._toggleFavorite(e, song.id)}
-                >${fav ? '★' : '☆'}</button>
+                ><app-icon .name=${fav ? 'star-solid' : 'star'} .size=${18}></app-icon></button>
             </li>
+        `;
+    }
+
+    _readSectionState() {
+        try {
+            return JSON.parse(localStorage.getItem(HOME_SECTIONS_STORAGE_KEY) || '{}');
+        } catch {
+            return {};
+        }
+    }
+
+    _writeSectionState() {
+        localStorage.setItem(HOME_SECTIONS_STORAGE_KEY, JSON.stringify(this._sectionState));
+    }
+
+    _isSectionOpen(key) {
+        return this._sectionState[key] !== false;
+    }
+
+    _onSectionToggle(key, event) {
+        this._sectionState = {
+            ...this._sectionState,
+            [key]: event.currentTarget.open,
+        };
+        this._writeSectionState();
+    }
+
+    _renderSection(key, title, content) {
+        return html`
+            <details class="section-block" ?open=${this._isSectionOpen(key)} @toggle=${(event) => this._onSectionToggle(key, event)}>
+                <summary class="section-summary">
+                    <span class="section-title">${title}</span>
+                    <span class="section-chevron" aria-hidden="true">▾</span>
+                </summary>
+                <div class="section-content">${content}</div>
+            </details>
         `;
     }
 
@@ -177,49 +229,62 @@ export class HomePage extends LocalizeMixin(LitElement) {
             <main>
                 ${this._loading ? html`<p class="loading">${t('home.loading')}</p>` : html`
                     ${showMySongs ? html`
-                        <section>
-                            <h2>🎸 ${t('home.mySongs')}</h2>
-                            <ul class="song-list">
-                                ${mySongs.map(s => this._renderSongItem(s))}
-                            </ul>
-                        </section>
+                        ${this._renderSection(
+                            'mySongs',
+                            html`<app-icon class="section-icon" name="queue-list" .size=${16}></app-icon>${t('home.mySongs')}`,
+                            html`
+                                <ul class="song-list">
+                                    ${mySongs.map(s => this._renderSongItem(s))}
+                                </ul>
+                            `
+                        )}
                     ` : ''}
 
                     ${showFavorites ? html`
-                        <section>
-                            <h2>⭐ ${t('home.favorites')}</h2>
-                            <ul class="song-list">
-                                ${favSongs.map(s => this._renderSongItem(s))}
-                            </ul>
-                        </section>
+                        ${this._renderSection(
+                            'favorites',
+                            html`<app-icon class="section-icon" name="star-solid" .size=${16}></app-icon>${t('home.favorites')}`,
+                            html`
+                                <ul class="song-list">
+                                    ${favSongs.map(s => this._renderSongItem(s))}
+                                </ul>
+                            `
+                        )}
                     ` : ''}
 
+                    ${this._renderSection(
+                        'results',
+                        html`${isSearching
+                            ? t('home.results', { query: this._query.trim() })
+                            : (showFavorites || showMySongs ? t('home.allSongs') : t('home.songs'))
+                        }`,
+                        this._filteredSongs.length === 0 ? html`<p class="empty">${t('home.noSongsFound')}</p>` : html`
+                            <ul class="song-list">
+                                ${(isSearching ? this._filteredSongs : nonSpecialResults).map(s => this._renderSongItem(s))}
+                            </ul>
+                        `
+                    )}
+
                     ${showLocal ? html`
-                        <section>
-                            <h2>📂 ${t('home.localFiles')} <span class="folder-name">(${this._localFolderName})</span></h2>
-                            ${this._filteredLocalSongs.length === 0 ? html`
-                                <p class="empty">
-                                    ${t('home.noSongsLoaded')} <button class="link-btn" @click=${this._retryLocalScan}>${t('home.grantAccess')}</button>
-                                </p>
+                        ${this._renderSection(
+                            'localFiles',
+                            html`<app-icon class="section-icon" name="folder" .size=${16}></app-icon>${t('home.localFiles')} <span class="folder-name">(${this._localFolderName})</span>`,
+                            this._filteredLocalSongs.length === 0 ? html`
+                                ${!isSearching ? html`
+                                    <p class="empty">
+                                        ${t('home.noSongsLoaded')} 
+                                    </p>
+                                ` : ''}
                             ` : html`
                                 <ul class="song-list">
                                     ${this._filteredLocalSongs.map(s => this._renderLocalSongItem(s))}
                                 </ul>
-                            `}
-                        </section>
+                                ${this._hasMoreLocal ? html`
+                                    <button class="load-more-btn" @click=${this._loadMoreLocalSongs}>Load more</button>
+                                ` : ''}
+                            `
+                        )}
                     ` : ''}
-
-                    <section>
-                        <h2>${isSearching
-                            ? t('home.results', { query: this._query.trim() })
-                            : (showFavorites || showMySongs ? t('home.allSongs') : t('home.songs'))
-                        }</h2>
-                        ${this._filteredSongs.length === 0 ? html`<p class="empty">${t('home.noSongsFound')}</p>` : html`
-                            <ul class="song-list">
-                                ${(isSearching ? this._filteredSongs : nonSpecialResults).map(s => this._renderSongItem(s))}
-                            </ul>
-                        `}
-                    </section>
                 `}
             </main>
 
@@ -233,10 +298,10 @@ export class HomePage extends LocalizeMixin(LitElement) {
                         aria-label=${t('home.search')}
                     />
                 </div>
-                <button class="nav-btn" @click=${this._openLocalFile} title=${t('home.openFileTitle')} aria-label=${t('home.openFileLabel')}>📂</button>
-                <button class="nav-btn" @click=${() => navigate('/settings')} title=${t('home.settingsLabel')} aria-label=${t('home.settingsLabel')}>⚙</button>
+                <button class="nav-btn" @click=${this._openLocalFile} title=${t('home.openFileTitle')} aria-label=${t('home.openFileLabel')}><app-icon name="folder-open" .size=${22}></app-icon></button>
+                <button class="nav-btn" @click=${() => navigate('/settings')} title=${t('home.settingsLabel')} aria-label=${t('home.settingsLabel')}><app-icon name="cog-6-tooth" .size=${22}></app-icon></button>
                 ${this._currentUser ? html`
-                    <button class="nav-btn" @click=${() => navigate('/add-song')} title=${t('home.addSongLabel')} aria-label=${t('home.addSongLabel')}>+</button>
+                    <button class="nav-btn" @click=${() => navigate('/add-song')} title=${t('home.addSongLabel')} aria-label=${t('home.addSongLabel')}><app-icon name="plus" .size=${22}></app-icon></button>
                     <button class="nav-btn nav-avatar" @click=${this._signOut} title=${t('home.signOutLabel')} aria-label=${t('home.signOutLabel')}>
                         ${this._currentUser.photoURL
                             ? html`<img class="avatar" src=${this._currentUser.photoURL} alt=${this._currentUser.displayName || t('home.userAvatar')} />`
@@ -244,7 +309,7 @@ export class HomePage extends LocalizeMixin(LitElement) {
                         }
                     </button>
                 ` : html`
-                    <button class="nav-btn" @click=${() => navigate('/login')} title=${t('home.signInLabel')} aria-label=${t('home.signInLabel')}>👤</button>
+                    <button class="nav-btn" @click=${() => navigate('/login')} title=${t('home.signInLabel')} aria-label=${t('home.signInLabel')}><app-icon name="user-circle" .size=${22}></app-icon></button>
                 `}
             </nav>
         `;
@@ -266,6 +331,9 @@ export class HomePage extends LocalizeMixin(LitElement) {
             margin: 0 0 8px;
             text-transform: uppercase;
             letter-spacing: 0.04em;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .search-wrapper {
@@ -344,6 +412,53 @@ export class HomePage extends LocalizeMixin(LitElement) {
         section {
             display: flex;
             flex-direction: column;
+        }
+
+        .section-block {
+            border: 1px solid var(--border, #e5e4e7);
+            border-radius: 12px;
+            background: var(--bg, #fff);
+            overflow: hidden;
+        }
+
+        .section-summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            user-select: none;
+        }
+
+        .section-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .section-title {
+            min-width: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-h, #08060d);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .section-content {
+            padding: 0 8px 8px;
+        }
+
+        .section-chevron {
+            color: var(--text, #6b6375);
+            transition: transform 0.15s ease;
+        }
+
+        .section-block:not([open]) .section-chevron {
+            transform: rotate(-90deg);
         }
 
         .song-list {
@@ -446,6 +561,22 @@ export class HomePage extends LocalizeMixin(LitElement) {
             color: var(--text, #6b6375);
             font-size: 0.95rem;
             margin: 8px 0 0;
+        }
+
+        .load-more-btn {
+            margin-top: 10px;
+            align-self: flex-start;
+            border: 1px solid var(--border, #e5e4e7);
+            border-radius: 8px;
+            background: var(--bg, #fff);
+            color: var(--text-h, #08060d);
+            padding: 8px 12px;
+            cursor: pointer;
+            font: inherit;
+        }
+
+        .load-more-btn:hover {
+            background: var(--accent-bg, rgba(170, 59, 255, 0.08));
         }
 
         .loading {

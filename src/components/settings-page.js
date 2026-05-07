@@ -9,6 +9,7 @@ import {
 import './scan-progress-indicator.js';
 import { startFolderScan } from '../services/local-songs-v2.js';
 import { t, getLanguageSetting, setLanguageSetting, LocalizeMixin } from '../services/i18n.js';
+import './app-icon.js';
 function navigate(path) {
     history.pushState(null, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -118,7 +119,7 @@ export class SettingsPage extends LocalizeMixin(LitElement) {
             : t('settings.favoritesHintPlural', { count: this._favCount });
         return html`
             <header>
-                <button class="back-btn" title=${t('settings.back')} aria-label=${t('settings.back')} @click=${() => navigate('/')}>←</button>
+                <button class="back-btn" title=${t('settings.back')} aria-label=${t('settings.back')} @click=${() => navigate('/')}><app-icon name="arrow-left" .size=${20}></app-icon></button>
                 <h1>${t('settings.title')}</h1>
             </header>
 
