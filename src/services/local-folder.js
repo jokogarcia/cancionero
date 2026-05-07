@@ -1,6 +1,6 @@
 /** @typedef {import('./songs.js').Song} Song */
 
-import { parseCrdFile, parseOlgaFile } from './local-song.js';
+import { parseCrdFile, parseOlgaFile, decompressGzFile } from './local-song.js';
 const DB_NAME = 'cancionero-local';
 const STORE = 'handles';
 const HANDLE_KEY = 'songsFolder';
@@ -160,7 +160,10 @@ export async function scanLocalFolder({ requestPermission = false } = {}) {
     const fileprocessor = async (entry, parentFolders) => {
         if (!/(crd|tab|btab)/i.test(entry.name)) return;
         try {
-            const file = await entry.getFile();
+            let file = await entry.getFile();
+            if (!isOlga && /\.gz$/i.test(entry.name)) {
+                file = await decompressGzFile(file);
+            }
             const song = isOlga ? parseOlgaFile([...parentFolders, entry.name].join('/')) : await parseCrdFile(file);
             n++;
             if(n%117===0){

@@ -1,4 +1,4 @@
-import { parseCrdFile, parseOlgaFile } from './local-song.js';
+import { parseCrdFile, parseOlgaFile, decompressGzFile } from './local-song.js';
 const INSERT_BATCH_SIZE = 200;
 const TX_ROTATE_BATCHES = 10;
 
@@ -164,7 +164,10 @@ async function scanDirectoryRecursive(directoryHandle, parentFolders, isOlga, vi
 const fileprocessor = async (entry, parentFolders, isOlga) => {
         if (!/(crd|tab|btab)/i.test(entry.name)) return;
         try {
-            const file = await entry.getFile();
+            let file = await entry.getFile();
+            if (!isOlga && /\.gz$/i.test(entry.name)) {
+                file = await decompressGzFile(file);
+            }
             const song = isOlga ? parseOlgaFile([...parentFolders, entry.name].join('/')) : await parseCrdFile(file);
             return song;
         } catch (err) {

@@ -81,6 +81,19 @@ export function parseOlgaFile(filePath){
 }
 
 /**
+ * Decompress a gzipped File and return a new File with the .gz extension removed.
+ * @param {File} file  A file with a .gz extension
+ * @returns {Promise<File>}
+ */
+export async function decompressGzFile(file) {
+    const ds = new DecompressionStream('gzip');
+    const decompressedStream = file.stream().pipeThrough(ds);
+    const decompressedBlob = await new Response(decompressedStream).blob();
+    const innerName = file.name.replace(/\.gz$/i, '');
+    return new File([decompressedBlob], innerName, { type: 'text/plain' });
+}
+
+/**
  * Heuristic: a NUL byte in the first 8KB strongly suggests a binary file.
  * @param {File|Blob} file
  */
