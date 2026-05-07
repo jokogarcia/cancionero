@@ -24,6 +24,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
         _favorite: { type: Boolean, state: true },
         _playing: { type: Boolean, state: true },
         _rate: { type: Number, state: true },
+        _formatMode: { type: Boolean, state: true },
     };
 
     constructor() {
@@ -33,6 +34,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
         this._favorite = false;
         this._playing = false;
         this._rate = getSettings().scrollRate;
+        this._formatMode = true;
         this._rafId = null;
         this._lastFrame = 0;
         this._pixelAccum = 0;
@@ -100,13 +102,30 @@ export class SongPage extends LocalizeMixin(LitElement) {
         }
     }
 
+    _toggleFormatMode() {
+        this._formatMode = !this._formatMode;
+    }
+
     _getLineHeight() {
+        if(!this._formatMode) {
+            const pre = this.renderRoot.querySelector('.plain-text');
+            if (pre) {
+                const style = getComputedStyle(pre);
+                const parsedLineHeight = parseFloat(style.lineHeight);
+                if (Number.isFinite(parsedLineHeight) && parsedLineHeight > 0) {
+                    return parsedLineHeight;
+                }
+                const parsedFontSize = parseFloat(style.fontSize);
+                if (Number.isFinite(parsedFontSize) && parsedFontSize > 0) {
+                    return parsedFontSize * 1.2;
+                }
+            }
+        }
         const renderer = this.renderRoot.querySelector('song-renderer');
-        const probe =
-            renderer?.renderRoot?.querySelector('.song-line') ||
+        const probe = renderer?.renderRoot?.querySelector('.song-line') ||
             renderer?.renderRoot
                 ?.querySelector('song-renderer-v2')
-                ?.renderRoot?.querySelector('.song-line, p, div');
+                ?.renderRoot?.querySelector('p, pre');
         if (probe) {
             const h = probe.getBoundingClientRect().height;
             if (h > 0) return h;
@@ -124,6 +143,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
             if (!this._playing) return;
             const dt = (now - this._lastFrame) / 1000;
             this._lastFrame = now;
+
             const pxPerSec = this._rate * this._getLineHeight();
             this._pixelAccum += pxPerSec * dt;
             const whole = Math.floor(this._pixelAccum);
@@ -169,8 +189,12 @@ export class SongPage extends LocalizeMixin(LitElement) {
         const favLabel = this._favorite ? t('song.removeFavorite') : t('song.addFavorite');
         const playLabel = this._playing ? t('song.pauseScroll') : t('song.playScroll');
         const isLocal = this.source === 'local';
+        const formatLabel = 'Format';
         return html`
-            <song-renderer .content=${this._song}></song-renderer>
+            ${this._formatMode
+                ? html`<song-renderer .content=${this._song}></song-renderer>`
+                : html`<pre class="plain-text">${this._song.content || ''}</pre>`
+            }
             <div class="toolbar">
                 <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}><app-icon name="arrow-left" .size=${20}></app-icon></button>
                 <button
@@ -182,13 +206,22 @@ export class SongPage extends LocalizeMixin(LitElement) {
                 >
                     <app-icon .name=${this._playing ? 'pause-solid' : 'play-solid'} .size=${20}></app-icon>
                 </button>
+                <button
+                    class="plain-btn ${this._formatMode ? 'is-active' : ''}"
+                    title=${formatLabel}
+                    aria-label=${formatLabel}
+                    aria-pressed=${this._formatMode}
+                    @click=${this._toggleFormatMode}
+                >
+                    ${formatLabel}
+                </button>
                 <label class="rate" title=${t('song.scrollRateTitle')}>
                     <input
                         class="rate-input"
                         type="number"
-                        min="0.004"
-                        max="0.01"
-                        step="0.001"
+                        min="0.01"
+                        max="10"
+                        step="0.5"
                         .value=${String(this._rate)}
                         aria-label=${t('song.scrollRateLabel')}
                         @input=${this._onRateChange}
@@ -269,6 +302,28 @@ export class SongPage extends LocalizeMixin(LitElement) {
             color: var(--text, #6b6375);
         }
 
+        .plain-btn {
+            border: 1px solid var(--border, #e5e4e7);
+            border-radius: 6px;
+            background: none;
+            height: 40px;
+            padding: 0 10px;
+            color: var(--text-h, #08060d);
+            cursor: pointer;
+            font: inherit;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .plain-btn:hover {
+            background: var(--accent-bg, rgba(170, 59, 255, 0.08));
+        }
+
+        .plain-btn.is-active {
+            color: var(--accent, #aa3bff);
+            border-color: var(--accent-border, rgba(170, 59, 255, 0.5));
+        }
+
         .rate-input {
             width: 52px;
             height: 28px;
@@ -309,6 +364,16 @@ export class SongPage extends LocalizeMixin(LitElement) {
             background: var(--accent-bg, rgba(170, 59, 255, 0.15));
             color: var(--accent, #aa3bff);
             border: 1px solid var(--accent-border, rgba(170, 59, 255, 0.5));
+        }
+
+        .plain-text {
+            margin: 0;
+            padding: 16px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: calc(0.95rem * var(--song-font-scale, 1));
+            color: var(--text-h, #08060d);
         }
     `;
 }

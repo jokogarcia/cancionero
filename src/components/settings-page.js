@@ -5,6 +5,7 @@ import {
     clearLocalFolder,
     getLocalFolderName,
     isLocalFolderSupported,
+    setLocalFolderHandle,
 } from '../services/local-folder.js';
 import './scan-progress-indicator.js';
 import { startFolderScan } from '../services/local-songs-v2.js';
@@ -94,6 +95,8 @@ export class SettingsPage extends LocalizeMixin(LitElement) {
                     this._foundSongsCount = e.detail.found;
                 };
                 window.addEventListener('local-folder-scan-progress', onScanProgress);
+                updateSettings({ localFolder: { name: result.name } });
+                await setLocalFolderHandle(result);
                 startFolderScan(result);
                 
             }

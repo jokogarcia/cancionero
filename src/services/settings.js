@@ -1,29 +1,30 @@
-const SETTINGS_KEY = 'cancionero_settings';
+import { constants } from "../constants";
 
 const DEFAULTS = {
-    scrollRate: 0.01,
+    scrollRate: 0.5,
     fontSize: 1,
     theme: 'system',
+    localFolder: null,
 };
 
 const listeners = new Set();
 
 function load() {
     try {
-        return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') };
+        return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(constants.SETTINGS_KEY) || '{}') };
     } catch {
         return { ...DEFAULTS };
     }
 }
 
 function save(settings) {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem(constants.SETTINGS_KEY, JSON.stringify(settings));
     listeners.forEach(fn => fn(settings));
 }
 
 /**
  * Get the current settings, merged with defaults.
- * @returns {{ scrollRate: number, fontSize: number, theme: 'system'|'light'|'dark' }}
+ * @returns {{ scrollRate: number, fontSize: number, theme: 'system'|'light'|'dark', localFolder: { name: string } | null }}
  */
 export function getSettings() {
     return load();
@@ -31,7 +32,7 @@ export function getSettings() {
 
 /**
  * Update one or more settings and persist.
- * @param {Partial<{ scrollRate: number, fontSize: number, theme: string }>} patch
+ * @param {Partial<{ scrollRate: number, fontSize: number, theme: string, localFolder: { name: string } | null }>} patch
  */
 export function updateSettings(patch) {
     const next = { ...load(), ...patch };

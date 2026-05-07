@@ -1,6 +1,8 @@
 /** @typedef {import('./songs.js').Song} Song */
 
-import { parseCrdFile, parseOlgaFile, decompressGzFile } from './local-song.js';
+import { parseCrdFile, parseOlgaFile,decompressGzFile } from './local-song.js';
+import { constants } from '../constants.js';
+import { idbGet, idbSet, idbDel } from './indexeddb.js';
 const DB_NAME = 'cancionero-local';
 const STORE = 'handles';
 const HANDLE_KEY = 'songsFolder';
@@ -52,12 +54,12 @@ export function isLocalFolderSupported() {
 }
 
 export function getLocalFolderName() {
-    return localStorage.getItem(NAME_STORAGE_KEY) || null;
+    return localStorage.getItem(constants.NAME_STORAGE_KEY) || null;
 }
 
 function setStoredName(name) {
-    if (name) localStorage.setItem(NAME_STORAGE_KEY, name);
-    else localStorage.removeItem(NAME_STORAGE_KEY);
+    if (name) localStorage.setItem(constants.NAME_STORAGE_KEY, name);
+    else localStorage.removeItem(constants.NAME_STORAGE_KEY);
 }
 
 /**
@@ -75,13 +77,22 @@ export async function pickLocalFolder() {
         if (err && err.name === 'AbortError') return null;
         throw err;
     }
-    await idbSet(HANDLE_KEY, handle);
     setStoredName(handle.name);
+    await setLocalFolderHandle(handle);
+    
     return { name: handle.name };
 }
-
+export async function setLocalFolderHandle(handle) {
+    try {
+        await idbSet(constants.DB_NAME, constants.STORE, constants.HANDLE_KEY, handle);
+    } catch (err) {
+         // If we fail to store the handle, we should clear any stored name to avoid confusion.
+         setStoredName(null);
+         throw err;
+     }
+}
 export async function clearLocalFolder() {
-    await idbDel(HANDLE_KEY);
+    await idbDel(constants.DB_NAME, constants.STORE, constants.HANDLE_KEY);
     setStoredName(null);
 }
 
@@ -148,7 +159,7 @@ async function detectOlgaArchive(rootHandle) {
  */
 export async function scanLocalFolder({ requestPermission = false } = {}) {
     if (!isLocalFolderSupported()) return [];
-    const handle = await idbGet(HANDLE_KEY);
+    const handle = await idbGet(constants.DB_NAME, constants.STORE, constants.HANDLE_KEY);
     if (!handle) return [];
     const ok = await ensurePermission(handle, requestPermission);
     if (!ok) return [];
@@ -190,7 +201,7 @@ export async function scanLocalFolder({ requestPermission = false } = {}) {
  * @returns {Promise<string>}
  */
 export async function getLocalFolderFile(relativePath) {
-    const handle = await idbGet(HANDLE_KEY);
+    const handle = await idbGet(constants.DB_NAME, constants.STORE, constants.HANDLE_KEY);
     if (!handle) throw new Error('No local folder selected');
     const ok = await ensurePermission(handle, false);
     if (!ok) throw new Error('Permission denied for local folder');
