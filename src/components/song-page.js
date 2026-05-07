@@ -8,6 +8,7 @@ import { getLocalSong } from '../services/local-song.js';
 import { acquireWakeLock, releaseWakeLock } from '../services/screen-wake-lock.js';
 import './song-renderer.js';
 import { t, LocalizeMixin } from '../services/i18n.js';
+import { iconArrowLeft, iconPlay, iconPause, iconStarSolid, iconStarRegular } from './icons.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -153,7 +154,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
             return html`
                 <p class="loading">${t('song.loading')}</p>
                 <div class="toolbar">
-                    <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}>←</button>
+                    <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}>${iconArrowLeft()}</button>
                 </div>
             `;
         }
@@ -161,7 +162,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
             return html`
                 <p class="not-found">${t('song.notFound')}</p>
                 <div class="toolbar">
-                    <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}>←</button>
+                    <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}>${iconArrowLeft()}</button>
                 </div>
             `;
         }
@@ -171,7 +172,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
         return html`
             <song-renderer .content=${this._song}></song-renderer>
             <div class="toolbar">
-                <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}>←</button>
+                <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}>${iconArrowLeft()}</button>
                 <button
                     class="play-btn ${this._playing ? 'is-playing' : ''}"
                     title=${playLabel}
@@ -179,7 +180,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
                     aria-pressed=${this._playing}
                     @click=${this._togglePlay}
                 >
-                    ${this._playing ? '⏸' : '▶'}
+                    ${this._playing ? iconPause() : iconPlay()}
                 </button>
                 <label class="rate" title=${t('song.scrollRateTitle')}>
                     <input
@@ -202,7 +203,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
                         aria-pressed=${this._favorite}
                         @click=${this._toggleFavorite}
                     >
-                        ${this._favorite ? '★' : '☆'}
+                        ${this._favorite ? iconStarSolid() : iconStarRegular()}
                     </button>
                 `}
             </div>
@@ -212,6 +213,13 @@ export class SongPage extends LocalizeMixin(LitElement) {
     static styles = css`
         :host {
             display: block;
+        }
+
+        svg {
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.125em;
+            flex-shrink: 0;
         }
 
         .toolbar {

@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { signInWithGoogle } from '../services/auth.js';
 import { t, LocalizeMixin } from '../services/i18n.js';
+import { iconMusic } from './icons.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -35,7 +36,7 @@ export class LoginPage extends LocalizeMixin(LitElement) {
     render() {
         return html`
             <div class="container">
-                <h1>🎵 Coda</h1>
+                <h1>${iconMusic()} Coda</h1>
                 <p class="subtitle">${t('login.subtitle')}</p>
                 <button class="google-btn" @click=${this._signIn} ?disabled=${this._loading}>
                     <svg class="google-icon" viewBox="0 0 48 48" aria-hidden="true">
@@ -60,6 +61,13 @@ export class LoginPage extends LocalizeMixin(LitElement) {
             min-height: 100svh;
             padding: 24px;
             box-sizing: border-box;
+        }
+
+        svg {
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.125em;
+            flex-shrink: 0;
         }
 
         .container {

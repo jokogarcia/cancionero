@@ -8,6 +8,7 @@ import { pickCrdFile, setLocalSong } from '../services/local-song.js';
 import { scanLocalFolder, getLocalFolderName } from '../services/local-folder.js';
 import { queryLocalSongs } from '../services/local-songs-v2.js';
 import { t, LocalizeMixin } from '../services/i18n.js';
+import { iconGuitar, iconFolderOpen, iconGear, iconUser, iconStarSolid, iconStarRegular } from './icons.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
@@ -151,7 +152,7 @@ export class HomePage extends LocalizeMixin(LitElement) {
                     aria-label="${favLabel}"
                     title="${favLabel}"
                     @click=${(e) => this._toggleFavorite(e, song.id)}
-                >${fav ? '★' : '☆'}</button>
+                >${fav ? iconStarSolid() : iconStarRegular()}</button>
             </li>
         `;
     }
@@ -178,7 +179,7 @@ export class HomePage extends LocalizeMixin(LitElement) {
                 ${this._loading ? html`<p class="loading">${t('home.loading')}</p>` : html`
                     ${showMySongs ? html`
                         <section>
-                            <h2>🎸 ${t('home.mySongs')}</h2>
+                            <h2>${iconGuitar()} ${t('home.mySongs')}</h2>
                             <ul class="song-list">
                                 ${mySongs.map(s => this._renderSongItem(s))}
                             </ul>
@@ -187,7 +188,7 @@ export class HomePage extends LocalizeMixin(LitElement) {
 
                     ${showFavorites ? html`
                         <section>
-                            <h2>⭐ ${t('home.favorites')}</h2>
+                            <h2>${iconStarSolid()} ${t('home.favorites')}</h2>
                             <ul class="song-list">
                                 ${favSongs.map(s => this._renderSongItem(s))}
                             </ul>
@@ -196,7 +197,7 @@ export class HomePage extends LocalizeMixin(LitElement) {
 
                     ${showLocal ? html`
                         <section>
-                            <h2>📂 ${t('home.localFiles')} <span class="folder-name">(${this._localFolderName})</span></h2>
+                            <h2>${iconFolderOpen()} ${t('home.localFiles')} <span class="folder-name">(${this._localFolderName})</span></h2>
                             ${this._filteredLocalSongs.length === 0 ? html`
                                 <p class="empty">
                                     ${t('home.noSongsLoaded')} <button class="link-btn" @click=${this._retryLocalScan}>${t('home.grantAccess')}</button>
@@ -233,8 +234,8 @@ export class HomePage extends LocalizeMixin(LitElement) {
                         aria-label=${t('home.search')}
                     />
                 </div>
-                <button class="nav-btn" @click=${this._openLocalFile} title=${t('home.openFileTitle')} aria-label=${t('home.openFileLabel')}>📂</button>
-                <button class="nav-btn" @click=${() => navigate('/settings')} title=${t('home.settingsLabel')} aria-label=${t('home.settingsLabel')}>⚙</button>
+                <button class="nav-btn" @click=${this._openLocalFile} title=${t('home.openFileTitle')} aria-label=${t('home.openFileLabel')}>${iconFolderOpen()}</button>
+                <button class="nav-btn" @click=${() => navigate('/settings')} title=${t('home.settingsLabel')} aria-label=${t('home.settingsLabel')}>${iconGear()}</button>
                 ${this._currentUser ? html`
                     <button class="nav-btn" @click=${() => navigate('/add-song')} title=${t('home.addSongLabel')} aria-label=${t('home.addSongLabel')}>+</button>
                     <button class="nav-btn nav-avatar" @click=${this._signOut} title=${t('home.signOutLabel')} aria-label=${t('home.signOutLabel')}>
@@ -244,7 +245,7 @@ export class HomePage extends LocalizeMixin(LitElement) {
                         }
                     </button>
                 ` : html`
-                    <button class="nav-btn" @click=${() => navigate('/login')} title=${t('home.signInLabel')} aria-label=${t('home.signInLabel')}>👤</button>
+                    <button class="nav-btn" @click=${() => navigate('/login')} title=${t('home.signInLabel')} aria-label=${t('home.signInLabel')}>${iconUser()}</button>
                 `}
             </nav>
         `;
@@ -257,6 +258,13 @@ export class HomePage extends LocalizeMixin(LitElement) {
             width: 100%;
             min-height: 100svh;
             box-sizing: border-box;
+        }
+
+        svg {
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.125em;
+            flex-shrink: 0;
         }
 
         h2 {
