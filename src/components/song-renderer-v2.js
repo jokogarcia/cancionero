@@ -48,10 +48,10 @@ export class SongRendererV2 extends LitElement {
 
       if (i < line.length && line[i] !== '[') {
         if (i > end) parts.push(line.slice(end, i));
-
-        const nextChar = line[i];
-        parts.push(html`<span class="chord" style= "min-width: ${chord.length+0.3}ch;" data-text=${chord}>${nextChar === ' ' ? '&nbsp;' : nextChar}</span>`);
-        cursor = i + 1;
+        const isLastChar = i === line.length - 1;
+        const nextChars = line[i]+(line[i+1] || '\u00A0').replace(/\s/, '\u00A0');
+        parts.push(html`<span class="chord" style= "min-width: ${chord.length+0.3}ch;" data-text=${chord}>${nextChars}</span>`);
+        cursor = i + (isLastChar ? 1 : 2);
       } else {
         // End of line, or next non-whitespace is another chord marker — use space placeholder
         if (i > end) parts.push(line.slice(end, i));
@@ -99,7 +99,6 @@ export class SongRendererV2 extends LitElement {
   render() {
     /**@type {Song} */
     const song = this.content.version === 1 ? convertV1ToV2(this.content) : this.content;
-    debugger;
     return html`
       <h1>${song.title}</h1>
         ${song.artist ? html`<h2>${song.artist}</h2>` : ''}
