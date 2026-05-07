@@ -1,7 +1,7 @@
 import { constants } from "../constants";
 
 const DEFAULTS = {
-    scrollRate: 0.01,
+    scrollRate: 0.5,
     fontSize: 1,
     theme: 'system',
     localFolder: null,
