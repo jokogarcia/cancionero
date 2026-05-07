@@ -5,11 +5,10 @@ import { findSong } from '../services/songs.js';
 import { getFavorites, isFavorite, addFavorite, removeFavorite } from '../services/favorites.js';
 import { subscribeToAuth, signOutUser } from '../services/auth.js';
 import { pickCrdFile, setLocalSong } from '../services/local-song.js';
-import { scanLocalFolder, getLocalFolderName } from '../services/local-folder.js';
 import { queryLocalSongs } from '../services/local-songs-v2.js';
 import { t, LocalizeMixin } from '../services/i18n.js';
 import './app-icon.js';
-
+import { constants } from '../constants.js';
 const HOME_SECTIONS_STORAGE_KEY = 'coda_home_sections';
 
 function navigate(path) {
@@ -630,3 +629,7 @@ export class HomePage extends LocalizeMixin(LitElement) {
 }
 
 customElements.define('home-page', HomePage);
+function getLocalFolderName() {
+        const settings = JSON.parse(localStorage.getItem(constants.SETTINGS_KEY) || '{}');
+        return settings.localFolder?.name || '';
+    };
