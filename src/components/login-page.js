@@ -1,12 +1,13 @@
 import { LitElement, html, css } from 'lit';
 import { signInWithGoogle } from '../services/auth.js';
+import { t, LocalizeMixin } from '../services/i18n.js';
 
 function navigate(path) {
     history.pushState(null, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-export class LoginPage extends LitElement {
+export class LoginPage extends LocalizeMixin(LitElement) {
     static properties = {
         _error: { type: String, state: true },
         _loading: { type: Boolean, state: true },
@@ -35,7 +36,7 @@ export class LoginPage extends LitElement {
         return html`
             <div class="container">
                 <h1>🎵 Coda</h1>
-                <p class="subtitle">Sign in to add and manage your songs.</p>
+                <p class="subtitle">${t('login.subtitle')}</p>
                 <button class="google-btn" @click=${this._signIn} ?disabled=${this._loading}>
                     <svg class="google-icon" viewBox="0 0 48 48" aria-hidden="true">
                         <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -43,10 +44,10 @@ export class LoginPage extends LitElement {
                         <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
                         <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
                     </svg>
-                    ${this._loading ? 'Signing in…' : 'Sign in with Google'}
+                    ${this._loading ? t('login.signingIn') : t('login.signInGoogle')}
                 </button>
                 ${this._error ? html`<p class="error">${this._error}</p>` : ''}
-                <button class="back-btn" @click=${() => navigate('/')}>← Back to songs</button>
+                <button class="back-btn" @click=${() => navigate('/')}>${t('login.backToSongs')}</button>
             </div>
         `;
     }

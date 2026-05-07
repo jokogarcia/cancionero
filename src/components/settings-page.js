@@ -8,6 +8,7 @@ import {
 } from '../services/local-folder.js';
 import './scan-progress-indicator.js';
 import { startFolderScan } from '../services/local-songs-v2.js';
+import { t, getLanguageSetting, setLanguageSetting, LocalizeMixin } from '../services/i18n.js';
 function navigate(path) {
     history.pushState(null, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -25,7 +26,7 @@ async function pickLocalFolder() {
         throw err;
     }
 }
-export class SettingsPage extends LitElement {
+export class SettingsPage extends LocalizeMixin(LitElement) {
     static properties = {
         _settings: { type: Object, state: true },
         _favCount: { type: Number, state: true },
@@ -64,13 +65,13 @@ export class SettingsPage extends LitElement {
     }
 
     _clearFavorites() {
-        if (!confirm('Remove all favorites? This cannot be undone.')) return;
+        if (!confirm(t('settings.confirmClearFavorites'))) return;
         localStorage.removeItem('cancionero_favorites');
         this._favCount = 0;
     }
 
     _reset() {
-        if (!confirm('Reset all settings to defaults?')) return;
+        if (!confirm(t('settings.confirmReset'))) return;
         this._settings = resetSettings();
         applyTheme(this._settings.theme);
         applyFontSize(this._settings.fontSize);
@@ -105,21 +106,29 @@ export class SettingsPage extends LitElement {
         this._folderName = null;
     }
 
+    _onLanguageChange(e) {
+        setLanguageSetting(e.target.value);
+    }
+
     render() {
         const { scrollRate, fontSize, theme } = this._settings;
+        const langSetting = getLanguageSetting();
+        const favHint = this._favCount === 1
+            ? t('settings.favoritesHint')
+            : t('settings.favoritesHintPlural', { count: this._favCount });
         return html`
             <header>
-                <button class="back-btn" title="Back" aria-label="Back" @click=${() => navigate('/')}>←</button>
-                <h1>Settings</h1>
+                <button class="back-btn" title=${t('settings.back')} aria-label=${t('settings.back')} @click=${() => navigate('/')}>←</button>
+                <h1>${t('settings.title')}</h1>
             </header>
 
             <main>
                 <section>
-                    <h2>Playback</h2>
+                    <h2>${t('settings.playback')}</h2>
                     <label class="row">
                         <span class="label">
-                            <span class="name">Default auto-scroll rate</span>
-                            <span class="hint">Lines per second</span>
+                            <span class="name">${t('settings.scrollRate')}</span>
+                            <span class="hint">${t('settings.scrollRateHint')}</span>
                         </span>
                         <input
                             type="number"
@@ -133,11 +142,11 @@ export class SettingsPage extends LitElement {
                 </section>
 
                 <section>
-                    <h2>Display</h2>
+                    <h2>${t('settings.display')}</h2>
                     <label class="row">
                         <span class="label">
-                            <span class="name">Font size</span>
-                            <span class="hint">Multiplier applied to lyrics (${fontSize.toFixed(2)}×)</span>
+                            <span class="name">${t('settings.fontSize')}</span>
+                            <span class="hint">${t('settings.fontSizeHint', { size: fontSize.toFixed(2) })}</span>
                         </span>
                         <input
                             type="range"
@@ -150,28 +159,40 @@ export class SettingsPage extends LitElement {
                     </label>
                     <label class="row">
                         <span class="label">
-                            <span class="name">Theme</span>
-                            <span class="hint">Follow system or force a mode</span>
+                            <span class="name">${t('settings.theme')}</span>
+                            <span class="hint">${t('settings.themeHint')}</span>
                         </span>
                         <select .value=${theme} @change=${this._onThemeChange}>
-                            <option value="system">System</option>
-                            <option value="light">Light</option>
-                            <option value="dark">Dark</option>
+                            <option value="system">${t('settings.themeSystem')}</option>
+                            <option value="light">${t('settings.themeLight')}</option>
+                            <option value="dark">${t('settings.themeDark')}</option>
+                        </select>
+                    </label>
+                    <label class="row">
+                        <span class="label">
+                            <span class="name">${t('settings.language')}</span>
+                            <span class="hint">${t('settings.languageHint')}</span>
+                        </span>
+                        <select .value=${langSetting} @change=${this._onLanguageChange}>
+                            <option value="system">${t('settings.languageSystem')}</option>
+                            <option value="en">${t('settings.languageEn')}</option>
+                            <option value="es">${t('settings.languageEs')}</option>
+                            <option value="de">${t('settings.languageDe')}</option>
                         </select>
                     </label>
                 </section>
 
                 <section>
-                    <h2>Library</h2>
+                    <h2>${t('settings.library')}</h2>
                     <div class="row">
                         <span class="label">
-                            <span class="name">Local files location</span>
+                            <span class="name">${t('settings.localLocation')}</span>
                             <span class="hint">
                                 ${!isLocalFolderSupported()
-                                    ? 'Not supported in this browser'
+                                    ? t('settings.notSupported')
                                     : this._folderName
-                                        ? html`Scanning <code>${this._folderName}</code> for .crd files on startup`
-                                        : 'Select a folder to scan for .crd files on startup'}
+                                        ? html`${t('settings.scanningFolderPrefix')}<code>${this._folderName}</code>${t('settings.scanningFolderSuffix')}`
+                                        : t('settings.selectFolderHint')}
                             </span>
                         </span>
                         <span class="button-group">
@@ -179,31 +200,31 @@ export class SettingsPage extends LitElement {
                                 class="action-btn"
                                 ?disabled=${!isLocalFolderSupported()}
                                 @click=${this._pickFolder}
-                            >${this._folderName ? 'Change' : 'Select folder'}</button>
+                            >${this._folderName ? t('settings.changeFolder') : t('settings.selectFolder')}</button>
                             ${this._folderName ? html`
-                                <button class="danger-btn" @click=${this._clearFolder}>Clear</button>
+                                <button class="danger-btn" @click=${this._clearFolder}>${t('settings.clear')}</button>
                             ` : ''}
                         </span>
                     </div>
                 </section>
 
                 <section>
-                    <h2>Data</h2>
+                    <h2>${t('settings.data')}</h2>
                     <div class="row">
                         <span class="label">
-                            <span class="name">Favorites</span>
-                            <span class="hint">${this._favCount} saved song${this._favCount === 1 ? '' : 's'}</span>
+                            <span class="name">${t('settings.favoritesName')}</span>
+                            <span class="hint">${favHint}</span>
                         </span>
                         <button class="danger-btn" ?disabled=${this._favCount === 0} @click=${this._clearFavorites}>
-                            Clear favorites
+                            ${t('settings.clearFavorites')}
                         </button>
                     </div>
                     <div class="row">
                         <span class="label">
-                            <span class="name">Reset settings</span>
-                            <span class="hint">Restore defaults for all options above</span>
+                            <span class="name">${t('settings.resetSettings')}</span>
+                            <span class="hint">${t('settings.resetHint')}</span>
                         </span>
-                        <button class="danger-btn" @click=${this._reset}>Reset</button>
+                        <button class="danger-btn" @click=${this._reset}>${t('settings.reset')}</button>
                     </div>
                 </section>
             </main>
