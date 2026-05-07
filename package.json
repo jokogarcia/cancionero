@@ -12,6 +12,8 @@
     "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch"
   },
   "dependencies": {
+    "@fortawesome/free-regular-svg-icons": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
     "firebase": "^11.6.0",
     "lit": "^3.3.2"
