@@ -19,35 +19,7 @@ function openDb() {
     });
 }
 
-async function idbGet(key) {
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, 'readonly');
-        const req = tx.objectStore(STORE).get(key);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-    });
-}
 
-async function idbSet(key, value) {
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, 'readwrite');
-        tx.objectStore(STORE).put(value, key);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-    });
-}
-
-async function idbDel(key) {
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, 'readwrite');
-        tx.objectStore(STORE).delete(key);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-    });
-}
 
 export function isLocalFolderSupported() {
     return typeof window !== 'undefined' && 'showDirectoryPicker' in window;
@@ -213,7 +185,10 @@ export async function getLocalFolderFile(relativePath) {
         current = await current.getDirectoryHandle(part);
     }
     const fileHandle = await current.getFileHandle(fileName);
-    const file = await fileHandle.getFile();
+    let file = await fileHandle.getFile();
+    if (/\.gz$/i.test(file.name)) {
+        file = await decompressGzFile(file);
+    }
     return file.text();
 }
 

@@ -205,13 +205,13 @@ function relativeFromRoot(rootPath, targetPath) {
 }
 /**
  * Extracts the file name, converts underscores to spaces, removes 
- * .crd and .txt extensions and crd, tab and ver* suffixes
+ * .crd, .gz and .txt extensions and crd, tab and ver* suffixes
  * @param {string} filePath 
  * @return {{title:string,type:string}} the extracted title and type
  */
-function extractOlgaTitleAndType(filePath) {
+export function extractOlgaTitleAndType(filePath) {
     const fileName = basename(filePath);
-    const nameWithoutExtension = fileName.replace(/\.(crd|txt)$/, '');
+    const nameWithoutExtension = fileName.replace(/(?:\.(?:gz|txt|crd))+$/i, '');
     const nameWithoutSuffixes = nameWithoutExtension.replace(/(?:_?(?:ver\d+|btab|tab|crd))+$/i, '');
     const nameWithoutUnderscores = underscoreToSpace(nameWithoutSuffixes);
     const nameWithoutDoubleSpaces = nameWithoutUnderscores.replace(/\s+/g, ' ').trim();
