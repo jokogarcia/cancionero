@@ -18,7 +18,6 @@ self.addEventListener('install', () => {
 });
 
 self.addEventListener('activate', event => {
-  initializeSQLite();
   event.waitUntil((async () => {
     await self.clients.claim();
 
