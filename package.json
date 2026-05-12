@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
-    "firebase": "^11.6.0",
+    "@supabase/supabase-js": "^2.105.4",
     "heroicons": "^2.2.0",
     "lit": "^3.3.2"
   },
