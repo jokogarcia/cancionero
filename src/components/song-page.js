@@ -2,9 +2,10 @@
 
 import { LitElement, html, css } from 'lit';
 import { getSongById } from '../services/songs.js';
-import { isFavorite, addFavorite, removeFavorite } from '../services/favorites.js';
+import { isFavorite, addFavorite, removeFavorite, uploadAndFavoriteSong } from '../services/favorites.js';
 import { getSettings } from '../services/settings.js';
 import { getLocalSong } from '../services/local-song.js';
+import { getLocalFolderFile } from '../services/local-folder.js';
 import { acquireWakeLock, releaseWakeLock } from '../services/screen-wake-lock.js';
 import './song-renderer.js';
 import './app-icon.js';
@@ -25,6 +26,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
         _playing: { type: Boolean, state: true },
         _rate: { type: Number, state: true },
         _formatMode: { type: Boolean, state: true },
+        _plainTextContent: { type: String, state: true },
     };
 
     constructor() {
@@ -35,6 +37,8 @@ export class SongPage extends LocalizeMixin(LitElement) {
         this._playing = false;
         this._rate = getSettings().scrollRate;
         this._formatMode = true;
+        this._plainTextContent = null;
+        this._loadingPath = null;
         this._rafId = null;
         this._lastFrame = 0;
         this._pixelAccum = 0;
@@ -64,6 +68,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
     async _loadSong() {
         this._loading = true;
         this._song = null;
+        this._plainTextContent = null;
         try {
             if (this.source === 'local') {
                 this._song = getLocalSong();
@@ -78,13 +83,59 @@ export class SongPage extends LocalizeMixin(LitElement) {
         }
     }
 
-    _toggleFavorite() {
-        if (this._favorite) {
-            removeFavorite(this.songId);
-        } else {
-            addFavorite(this.songId);
+    willUpdate(changedProps) {
+        if (changedProps.has('_song') && this._song?.path && this._song.path !== this._loadingPath) {
+            this._loadingPath = this._song.path;
+            this._plainTextContent = null;
+            getLocalFolderFile(this._song.path).then(text => {
+                if (this._loadingPath === this._song?.path) {
+                    this._plainTextContent = text;
+                }
+            }).catch(err => {
+                console.error('Failed to load local file:', err);
+                this._plainTextContent = '';
+            });
         }
-        this._favorite = !this._favorite;
+    }
+
+    async _toggleFavorite() {
+        try {
+            if (this.source === 'local') {
+                if (this._favorite) return;
+                this._loading = true;
+
+                let localContent = (this._song?.content || '').trim();
+                if (!localContent && this._song?.path) {
+                    localContent = (await getLocalFolderFile(this._song.path)).trim();
+                }
+                if (!localContent) {
+                    throw new Error('This local song has no content to upload.');
+                }
+
+                const uploadedSong = await uploadAndFavoriteSong({
+                    ...this._song,
+                    content: localContent,
+                });
+                this.songId = uploadedSong.id;
+                this.source = null;
+                this._song = uploadedSong;
+                this._favorite = true;
+                navigate(`/song/${uploadedSong.id}`);
+                return;
+            }
+
+            if (this._favorite) {
+                removeFavorite(this.songId);
+            } else {
+                addFavorite(this.songId);
+            }
+            this._favorite = !this._favorite;
+        } catch (err) {
+            console.error('Failed to update favorite:', err);
+            alert(err?.message || 'Could not update favorite.');
+        } finally {
+            this._loading = false;
+        }
     }
 
     _onRateChange(e) {
@@ -190,13 +241,23 @@ export class SongPage extends LocalizeMixin(LitElement) {
         const playLabel = this._playing ? t('song.pauseScroll') : t('song.playScroll');
         const isLocal = this.source === 'local';
         const formatLabel = 'Format';
+        const plainTextContent = this._song?.path ? (this._plainTextContent ?? '') : (this._song?.content ?? '');
         return html`
             ${this._formatMode
                 ? html`<song-renderer .content=${this._song}></song-renderer>`
-                : html`<pre class="plain-text">${this._song.content || ''}</pre>`
+                : html`<pre class="plain-text">${plainTextContent}</pre>`
             }
             <div class="toolbar">
                 <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}><app-icon name="arrow-left" .size=${20}></app-icon></button>
+                <button
+                    class="plain-btn ${this._formatMode ? 'is-active' : ''}"
+                    title=${formatLabel}
+                    aria-label=${formatLabel}
+                    aria-pressed=${this._formatMode}
+                    @click=${this._toggleFormatMode}
+                >
+                    <app-icon name='sparkles' .size=${16}></app-icon>
+                </button>
                 <button
                     class="play-btn ${this._playing ? 'is-playing' : ''}"
                     title=${playLabel}
@@ -206,15 +267,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
                 >
                     <app-icon .name=${this._playing ? 'pause-solid' : 'play-solid'} .size=${20}></app-icon>
                 </button>
-                <button
-                    class="plain-btn ${this._formatMode ? 'is-active' : ''}"
-                    title=${formatLabel}
-                    aria-label=${formatLabel}
-                    aria-pressed=${this._formatMode}
-                    @click=${this._toggleFormatMode}
-                >
-                    ${formatLabel}
-                </button>
+                
                 <label class="rate" title=${t('song.scrollRateTitle')}>
                     <input
                         class="rate-input"
@@ -228,17 +281,17 @@ export class SongPage extends LocalizeMixin(LitElement) {
                     />
                     <span class="rate-unit">${t('song.lps')}</span>
                 </label>
-                ${isLocal ? html`<span class="local-badge" title=${t('song.localBadgeTitle')}>${t('song.local')}</span>` : html`
-                    <button
-                        class="fav-btn ${this._favorite ? 'is-fav' : ''}"
-                        title=${favLabel}
-                        aria-label=${favLabel}
-                        aria-pressed=${this._favorite}
-                        @click=${this._toggleFavorite}
-                    >
-                        <app-icon .name=${this._favorite ? 'star-solid' : 'star'} .size=${20}></app-icon>
-                    </button>
-                `}
+                
+                <button
+                    class="fav-btn ${this._favorite ? 'is-fav' : ''}"
+                    title=${favLabel}
+                    aria-label=${favLabel}
+                    aria-pressed=${this._favorite}
+                    @click=${this._toggleFavorite}
+                >
+                    <app-icon .name=${this._favorite ? 'star-solid' : 'star'} .size=${20}></app-icon>
+                </button>
+                ${isLocal ? html`<span class="local-badge" title=${t('song.localBadgeTitle')}>${t('song.local')}</span>` : ''}
             </div>
         `;
     }
@@ -374,6 +427,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
             font-family: 'Courier New', Courier, monospace;
             font-size: calc(0.95rem * var(--song-font-scale, 1));
             color: var(--text-h, #08060d);
+            text-align:start;
         }
     `;
 }

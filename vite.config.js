@@ -11,6 +11,7 @@ export default defineConfig({
       'Cross-Origin-Embedder-Policy': 'require-corp',
     },
   },
+
   plugins: [
     {
       name: 'force-cross-origin-isolation-headers',
@@ -22,6 +23,7 @@ export default defineConfig({
         })
       },
     },
+
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
