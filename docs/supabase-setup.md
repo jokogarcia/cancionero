@@ -65,6 +65,8 @@ create table if not exists public.songs (
 create index if not exists songs_uploader_id_idx on public.songs (uploaderId);
 ```
 
+`uploaderId` is stored as `auth.users.id` and maps to the `user.uid` field used by the frontend auth service.
+
 ## 4) Enable Row Level Security and policies
 
 Run:

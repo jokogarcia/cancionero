@@ -4,6 +4,11 @@ let _initialized = false;
 let _currentUser = null;
 const _listeners = new Set();
 
+/**
+ * Normalize Supabase user shape to keep legacy `uid` access used in the app.
+ * @param {import('@supabase/supabase-js').User|null} user
+ * @returns {(import('@supabase/supabase-js').User & {uid: string})|null}
+ */
 function normalizeUser(user) {
     if (!user) return null;
     return {
@@ -14,6 +19,7 @@ function normalizeUser(user) {
 
 supabase.auth.getSession().then(({ data, error }) => {
     if (error) {
+        console.error('Failed to initialize auth session:', error);
         _initialized = true;
         _currentUser = null;
         _listeners.forEach(fn => fn(_currentUser));
