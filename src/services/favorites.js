@@ -1,3 +1,5 @@
+import { uploadLocalSongToFirebase } from './songs.js';
+
 const FAVORITES_KEY = 'coda_favorites';
 
 function loadFavorites() {
@@ -47,4 +49,15 @@ export function addFavorite(songId) {
  */
 export function removeFavorite(songId) {
     saveFavorites(loadFavorites().filter(id => id !== songId));
+}
+
+/**
+ * Upload a local song to Firebase and mark it as favorite.
+ * @param {import('./songs.js').Song} localSong
+ * @returns {Promise<import('./songs.js').Song>}
+ */
+export async function uploadAndFavoriteSong(localSong) {
+    const uploadedSong = await uploadLocalSongToFirebase(localSong);
+    addFavorite(uploadedSong.id);
+    return uploadedSong;
 }

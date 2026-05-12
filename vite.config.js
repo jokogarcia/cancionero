@@ -5,23 +5,9 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@sqlite.org/sqlite-wasm'],
   },
-  server: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
-  },
+  
   plugins: [
-    {
-      name: 'force-cross-origin-isolation-headers',
-      configureServer(server) {
-        server.middlewares.use((_, res, next) => {
-          res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
-          res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp')
-          next()
-        })
-      },
-    },
+    
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',

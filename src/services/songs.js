@@ -21,6 +21,7 @@ SONG FORMAT in Firestore:
 */
 import { getFirestore, collection, getDocs, doc, getDoc, addDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import { app } from '../firebase.js';
+import { getCurrentUser } from './auth.js';
 
 const db = getFirestore(app);
 const songsCol = collection(db, 'songs');
@@ -95,7 +96,7 @@ export async function getSongById(id) {
 export async function insertSong(song) {
     const songWithDefaults = {
         ...song,
-        version: 1,
+        version: Number.isFinite(song.version) ? song.version : 1,
         createdAt: serverTimestamp(),
         modifiedAt: serverTimestamp(),
         isPublic: song.isPublic === true,
@@ -202,4 +203,37 @@ export function findChordsInLine(line) {
     }
 
     return matches;
+}
+
+/**
+ * Upload a local song to Firebase, always as a private song.
+ * The content is converted to v2 before persisting.
+ * @param {Song} localSong
+ * @return {Promise<Song>}
+ */
+export async function uploadLocalSongToFirebase(localSong) {
+    const user = getCurrentUser();
+    if (!user) {
+        throw new Error('You must be signed in to favorite local songs.');
+    }
+
+    const normalized = {
+        ...localSong,
+        version: localSong.version || 1,
+        content: localSong.content || '',
+    };
+    const converted = convertV1ToV2(normalized);
+
+    return insertSong({
+        title: converted.title || 'Untitled',
+        artist: converted.artist || '',
+        key: converted.key || '',
+        album: converted.album || '',
+        year: Number.isFinite(converted.year) ? converted.year : 0,
+        author: converted.author || '',
+        uploaderId: user.uid,
+        version: 2,
+        isPublic: false,
+        content: converted.content || '',
+    });
 }

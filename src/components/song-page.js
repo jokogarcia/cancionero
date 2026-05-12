@@ -2,7 +2,7 @@
 
 import { LitElement, html, css } from 'lit';
 import { getSongById } from '../services/songs.js';
-import { isFavorite, addFavorite, removeFavorite } from '../services/favorites.js';
+import { isFavorite, addFavorite, removeFavorite, uploadAndFavoriteSong } from '../services/favorites.js';
 import { getSettings } from '../services/settings.js';
 import { getLocalSong } from '../services/local-song.js';
 import { getLocalFolderFile } from '../services/local-folder.js';
@@ -98,13 +98,44 @@ export class SongPage extends LocalizeMixin(LitElement) {
         }
     }
 
-    _toggleFavorite() {
-        if (this._favorite) {
-            removeFavorite(this.songId);
-        } else {
-            addFavorite(this.songId);
+    async _toggleFavorite() {
+        try {
+            if (this.source === 'local') {
+                if (this._favorite) return;
+                this._loading = true;
+
+                let localContent = (this._song?.content || '').trim();
+                if (!localContent && this._song?.path) {
+                    localContent = (await getLocalFolderFile(this._song.path)).trim();
+                }
+                if (!localContent) {
+                    throw new Error('This local song has no content to upload.');
+                }
+
+                const uploadedSong = await uploadAndFavoriteSong({
+                    ...this._song,
+                    content: localContent,
+                });
+                this.songId = uploadedSong.id;
+                this.source = null;
+                this._song = uploadedSong;
+                this._favorite = true;
+                navigate(`/song/${uploadedSong.id}`);
+                return;
+            }
+
+            if (this._favorite) {
+                removeFavorite(this.songId);
+            } else {
+                addFavorite(this.songId);
+            }
+            this._favorite = !this._favorite;
+        } catch (err) {
+            console.error('Failed to update favorite:', err);
+            alert(err?.message || 'Could not update favorite.');
+        } finally {
+            this._loading = false;
         }
-        this._favorite = !this._favorite;
     }
 
     _onRateChange(e) {
@@ -251,17 +282,16 @@ export class SongPage extends LocalizeMixin(LitElement) {
                     <span class="rate-unit">${t('song.lps')}</span>
                 </label>
                 
-                ${isLocal ? html`<span class="local-badge" title=${t('song.localBadgeTitle')}>${t('song.local')}</span>` : html`
-                    <button
-                        class="fav-btn ${this._favorite ? 'is-fav' : ''}"
-                        title=${favLabel}
-                        aria-label=${favLabel}
-                        aria-pressed=${this._favorite}
-                        @click=${this._toggleFavorite}
-                    >
-                        <app-icon .name=${this._favorite ? 'star-solid' : 'star'} .size=${20}></app-icon>
-                    </button>
-                `}
+                <button
+                    class="fav-btn ${this._favorite ? 'is-fav' : ''}"
+                    title=${favLabel}
+                    aria-label=${favLabel}
+                    aria-pressed=${this._favorite}
+                    @click=${this._toggleFavorite}
+                >
+                    <app-icon .name=${this._favorite ? 'star-solid' : 'star'} .size=${20}></app-icon>
+                </button>
+                ${isLocal ? html`<span class="local-badge" title=${t('song.localBadgeTitle')}>${t('song.local')}</span>` : ''}
             </div>
         `;
     }
