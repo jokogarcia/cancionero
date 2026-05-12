@@ -100,9 +100,12 @@ export async function getSongById(id) {
  * @return {Promise<Song>} The created song including its generated id.
  */
 export async function insertSong(song) {
+    const now = new Date().toISOString();
     const songWithDefaults = {
         ...song,
         version: Number.isFinite(song.version) ? song.version : 1,
+        createdAt: song.createdAt || now,
+        modifiedAt: song.modifiedAt || now,
         isPublic: song.isPublic === true,
         isHiddenDMCA: false,
     };
