@@ -1,5 +1,5 @@
 /*
-SONG FORMAT in Firestore:
+SONG FORMAT in Supabase (table: songs):
 {
   "title": "Song Title",
   "artist": "Artist Name",
@@ -9,8 +9,8 @@ SONG FORMAT in Firestore:
   "author": "Author Name",
   "uploaderId": "uid-of-uploader",
   "version": 1,
-  "createdAt": "<Firestore timestamp>",
-  "modifiedAt": "<Firestore timestamp>",
+  "createdAt": "<ISO timestamp>",
+  "modifiedAt": "<ISO timestamp>",
   "isPublic": false,
   "isHiddenDMCA": false,
   "content":"Plain text with chords in square brackets inline with the lyrics, e.g.:
@@ -19,12 +19,10 @@ SONG FORMAT in Firestore:
 }
   
 */
-import { getFirestore, collection, getDocs, doc, getDoc, addDoc, query, where, serverTimestamp } from 'firebase/firestore';
-import { app } from '../firebase.js';
+import { supabase } from '../supabase.js';
 import { getCurrentUser } from './auth.js';
 
-const db = getFirestore(app);
-const songsCol = collection(db, 'songs');
+const SONGS_TABLE = 'songs';
 
 /**
  * @typedef {Object} Song
@@ -37,8 +35,8 @@ const songsCol = collection(db, 'songs');
  * @property {string} author
  * @property {string} uploaderId
  * @property {number} version
- * @property {import('firebase/firestore').Timestamp} createdAt
- * @property {import('firebase/firestore').Timestamp} modifiedAt
+ * @property {string} createdAt
+ * @property {string} modifiedAt
  * @property {boolean} isPublic
  * @property {boolean} isHiddenDMCA
  * @property {string} content
@@ -57,8 +55,11 @@ const songsCol = collection(db, 'songs');
  * @return {Promise<Song[]>}
  */
 export async function findSong(title, artist, author, lyric, andOr) {
-    const snapshot = await getDocs(songsCol);
-    const songs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const { data, error } = await supabase.from(SONGS_TABLE).select('*');
+    if (error) {
+        throw error;
+    }
+    const songs = data || [];
     return songs.filter(song => {
         const matchesTitle = title ? song.title?.toLowerCase().includes(title.toLowerCase()) : false;
         const matchesArtist = artist ? song.artist?.toLowerCase().includes(artist.toLowerCase()) : false;
@@ -82,28 +83,41 @@ export async function findSong(title, artist, author, lyric, andOr) {
  * @return {Promise<Song|null>}
  */
 export async function getSongById(id) {
-    const docRef = doc(db, 'songs', id);
-    const snapshot = await getDoc(docRef);
-    if (!snapshot.exists()) return null;
-    return { id: snapshot.id, ...snapshot.data() };
+    const { data, error } = await supabase
+        .from(SONGS_TABLE)
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+    if (error) {
+        throw error;
+    }
+    return data || null;
 }
 
 /**
- * Insert a new song into Firestore.
- * @param {Omit<Song, 'id'>} song - Song data without an id; id is assigned by Firestore.
+ * Insert a new song into Supabase.
+ * @param {Omit<Song, 'id'>} song - Song data without an id; id is assigned by Supabase.
  * @return {Promise<Song>} The created song including its generated id.
  */
 export async function insertSong(song) {
+    const now = new Date().toISOString();
     const songWithDefaults = {
         ...song,
         version: Number.isFinite(song.version) ? song.version : 1,
-        createdAt: serverTimestamp(),
-        modifiedAt: serverTimestamp(),
+        createdAt: now,
+        modifiedAt: now,
         isPublic: song.isPublic === true,
         isHiddenDMCA: false,
     };
-    const docRef = await addDoc(songsCol, songWithDefaults);
-    return { id: docRef.id, ...songWithDefaults };
+    const { data, error } = await supabase
+        .from(SONGS_TABLE)
+        .insert(songWithDefaults)
+        .select('*')
+        .single();
+    if (error) {
+        throw error;
+    }
+    return data;
 }
 
 /**
@@ -112,9 +126,14 @@ export async function insertSong(song) {
  * @return {Promise<Song[]>}
  */
 export async function getSongsByUploader(uploaderId) {
-    const q = query(songsCol, where('uploaderId', '==', uploaderId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const { data, error } = await supabase
+        .from(SONGS_TABLE)
+        .select('*')
+        .eq('uploaderId', uploaderId);
+    if (error) {
+        throw error;
+    }
+    return data || [];
 }
 
 export function convertV1ToV2(song) {
@@ -206,12 +225,12 @@ export function findChordsInLine(line) {
 }
 
 /**
- * Upload a local song to Firebase, always as a private song.
+ * Upload a local song to Supabase, always as a private song.
  * The content is converted to v2 before persisting.
  * @param {Song} localSong
  * @return {Promise<Song>}
  */
-export async function uploadLocalSongToFirebase(localSong) {
+export async function uploadLocalSong(localSong) {
     const user = getCurrentUser();
     if (!user) {
         throw new Error('You must be signed in to favorite local songs.');
@@ -237,3 +256,5 @@ export async function uploadLocalSongToFirebase(localSong) {
         content: converted.content || '',
     });
 }
+
+export const uploadLocalSongToFirebase = uploadLocalSong;
