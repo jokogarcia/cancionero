@@ -5,6 +5,7 @@ import { getSongById } from '../services/songs.js';
 import { isFavorite, addFavorite, removeFavorite } from '../services/favorites.js';
 import { getSettings } from '../services/settings.js';
 import { getLocalSong } from '../services/local-song.js';
+import { getLocalFolderFile } from '../services/local-folder.js';
 import { acquireWakeLock, releaseWakeLock } from '../services/screen-wake-lock.js';
 import './song-renderer.js';
 import './app-icon.js';
@@ -25,6 +26,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
         _playing: { type: Boolean, state: true },
         _rate: { type: Number, state: true },
         _formatMode: { type: Boolean, state: true },
+        _plainTextContent: { type: String, state: true },
     };
 
     constructor() {
@@ -35,6 +37,8 @@ export class SongPage extends LocalizeMixin(LitElement) {
         this._playing = false;
         this._rate = getSettings().scrollRate;
         this._formatMode = true;
+        this._plainTextContent = null;
+        this._loadingPath = null;
         this._rafId = null;
         this._lastFrame = 0;
         this._pixelAccum = 0;
@@ -64,6 +68,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
     async _loadSong() {
         this._loading = true;
         this._song = null;
+        this._plainTextContent = null;
         try {
             if (this.source === 'local') {
                 this._song = getLocalSong();
@@ -75,6 +80,21 @@ export class SongPage extends LocalizeMixin(LitElement) {
             }
         } finally {
             this._loading = false;
+        }
+    }
+
+    willUpdate(changedProps) {
+        if (changedProps.has('_song') && this._song?.path && this._song.path !== this._loadingPath) {
+            this._loadingPath = this._song.path;
+            this._plainTextContent = null;
+            getLocalFolderFile(this._song.path).then(text => {
+                if (this._loadingPath === this._song?.path) {
+                    this._plainTextContent = text;
+                }
+            }).catch(err => {
+                console.error('Failed to load local file:', err);
+                this._plainTextContent = '';
+            });
         }
     }
 
@@ -190,10 +210,11 @@ export class SongPage extends LocalizeMixin(LitElement) {
         const playLabel = this._playing ? t('song.pauseScroll') : t('song.playScroll');
         const isLocal = this.source === 'local';
         const formatLabel = 'Format';
+        const plainTextContent = this._song?.path ? (this._plainTextContent ?? '') : (this._song?.content ?? '');
         return html`
             ${this._formatMode
                 ? html`<song-renderer .content=${this._song}></song-renderer>`
-                : html`<pre class="plain-text">${this._song.content || ''}</pre>`
+                : html`<pre class="plain-text">${plainTextContent}</pre>`
             }
             <div class="toolbar">
                 <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}><app-icon name="arrow-left" .size=${20}></app-icon></button>
