@@ -10,6 +10,7 @@ import plus from 'heroicons/24/outline/plus.svg?raw';
 import queueList from 'heroicons/24/outline/queue-list.svg?raw';
 import star from 'heroicons/24/outline/star.svg?raw';
 import userCircle from 'heroicons/24/outline/user-circle.svg?raw';
+import sparkles from 'heroicons/24/outline/sparkles.svg?raw';
 
 import pauseSolid from 'heroicons/24/solid/pause.svg?raw';
 import playSolid from 'heroicons/24/solid/play.svg?raw';
@@ -28,6 +29,7 @@ const ICONS = {
   'user-circle': userCircle,
   'pause-solid': pauseSolid,
   'play-solid': playSolid,
+  sparkles,
 };
 
 export class AppIcon extends LitElement {

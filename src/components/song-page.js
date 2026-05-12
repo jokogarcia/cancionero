@@ -219,6 +219,15 @@ export class SongPage extends LocalizeMixin(LitElement) {
             <div class="toolbar">
                 <button class="back-btn" title=${t('song.back')} aria-label=${t('song.back')} @click=${() => navigate('/')}><app-icon name="arrow-left" .size=${20}></app-icon></button>
                 <button
+                    class="plain-btn ${this._formatMode ? 'is-active' : ''}"
+                    title=${formatLabel}
+                    aria-label=${formatLabel}
+                    aria-pressed=${this._formatMode}
+                    @click=${this._toggleFormatMode}
+                >
+                    <app-icon name='sparkles' .size=${16}></app-icon>
+                </button>
+                <button
                     class="play-btn ${this._playing ? 'is-playing' : ''}"
                     title=${playLabel}
                     aria-label=${playLabel}
@@ -227,15 +236,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
                 >
                     <app-icon .name=${this._playing ? 'pause-solid' : 'play-solid'} .size=${20}></app-icon>
                 </button>
-                <button
-                    class="plain-btn ${this._formatMode ? 'is-active' : ''}"
-                    title=${formatLabel}
-                    aria-label=${formatLabel}
-                    aria-pressed=${this._formatMode}
-                    @click=${this._toggleFormatMode}
-                >
-                    ${formatLabel}
-                </button>
+                
                 <label class="rate" title=${t('song.scrollRateTitle')}>
                     <input
                         class="rate-input"
@@ -249,6 +250,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
                     />
                     <span class="rate-unit">${t('song.lps')}</span>
                 </label>
+                
                 ${isLocal ? html`<span class="local-badge" title=${t('song.localBadgeTitle')}>${t('song.local')}</span>` : html`
                     <button
                         class="fav-btn ${this._favorite ? 'is-fav' : ''}"
