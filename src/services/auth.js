@@ -45,8 +45,8 @@ export function getCurrentUser() {
  */
 export function subscribeToAuth(callback) {
     _listeners.add(callback);
-    // Only call immediately if Firebase Auth has already resolved the initial state.
-    // Otherwise the callback is called when onAuthStateChanged fires.
+    // Only call immediately if auth has already resolved the initial state.
+    // Otherwise the callback is called when auth state change events fire.
     if (_initialized) {
         callback(_currentUser);
     }

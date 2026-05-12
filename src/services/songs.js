@@ -256,5 +256,3 @@ export async function uploadLocalSong(localSong) {
         content: converted.content || '',
     });
 }
-
-export const uploadLocalSongToFirebase = uploadLocalSong;
