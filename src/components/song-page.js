@@ -395,6 +395,7 @@ export class SongPage extends LocalizeMixin(LitElement) {
             font-family: 'Courier New', Courier, monospace;
             font-size: calc(0.95rem * var(--song-font-scale, 1));
             color: var(--text-h, #08060d);
+            text-align:start;
         }
     `;
 }
